@@ -1,1 +1,840 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ma Briqueothèque — Collection LEGO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ============================================================
+     1) CONFIGURATION VISUELLE — modifie librement ces variables
+     ============================================================ */
+  :root{
+    --bg:#F4F5F0;
+    --surface:#FFFFFF;
+    --ink:#1C1F1B;
+    --muted:#6B6F66;
+    --border:#DEDCD2;
+    --brick:#D0311C;
+    --brick-dark:#A62717;
+    --plate:#4C7A3F;
+    --plate-dark:#3A5E30;
+    --stud:#F2A900;
+    --stud-dark:#C88900;
+    --radius:6px;
+    --font-heading:'Sora', sans-serif;
+    --font-body:'IBM Plex Sans', sans-serif;
+  }
 
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  h1,h2,h3{ font-family:var(--font-heading); margin:0; }
+  a{ color:inherit; }
+  button{ font-family:inherit; cursor:pointer; }
+  input, select, textarea{ font-family:inherit; font-size:14px; }
+  ::selection{ background:var(--stud); color:var(--ink); }
+
+  .app{ display:flex; flex:1; flex-direction:column; }
+  @media (min-width:800px){ .app{ flex-direction:row; } }
+
+  /* Sidebar */
+  .sidebar{ background:var(--ink); color:var(--bg); flex-shrink:0; }
+  @media (min-width:800px){ .sidebar{ width:230px; min-height:100vh; } }
+  .sidebar-header{ padding:20px; }
+  .logo-dots{ display:flex; gap:6px; margin-bottom:10px; }
+  .logo-dots span{ width:12px; height:12px; border-radius:2px; display:inline-block; }
+  .logo-dots .d1{ background:var(--brick); }
+  .logo-dots .d2{ background:var(--stud); }
+  .logo-dots .d3{ background:var(--plate); }
+  .sidebar h1{ font-size:20px; line-height:1.2; }
+  .nav{ display:flex; gap:4px; padding:10px; overflow-x:auto; }
+  @media (min-width:800px){ .nav{ flex-direction:column; padding:16px; } }
+  .nav button{
+    background:none; border:none; color:rgba(244,245,240,.8);
+    text-align:left; padding:10px 12px; border-radius:var(--radius);
+    font-size:14px; font-weight:500; white-space:nowrap;
+  }
+  .nav button:hover{ background:rgba(255,255,255,.1); color:var(--bg); }
+  .nav button.active{ background:var(--plate); color:#fff; }
+
+  /* Main content */
+  main{ flex:1; padding:20px; max-width:1100px; }
+  @media (min-width:800px){ main{ padding:32px; } }
+  .view{ display:flex; flex-direction:column; gap:24px; }
+  .view[hidden]{ display:none; }
+  .page-header{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .page-header h2{ font-size:28px; }
+  .muted{ color:var(--muted); }
+  .error-text{ color:var(--brick); font-size:14px; }
+  .success-text{ color:var(--plate); font-size:14px; }
+
+  /* Buttons */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:9px 16px; border-radius:var(--radius); border:2px solid transparent;
+    font-size:14px; font-weight:500; transition:background .15s,color .15s,border-color .15s;
+  }
+  .btn-primary{ background:var(--brick); color:#fff; }
+  .btn-primary:hover{ background:var(--brick-dark); }
+  .btn-secondary{ background:var(--plate); color:#fff; }
+  .btn-secondary:hover{ background:var(--plate-dark); }
+  .btn-outline{ background:transparent; border-color:var(--border); color:var(--ink); }
+  .btn-outline:hover{ background:var(--bg); }
+  .btn-danger-outline{ background:transparent; border-color:var(--brick); color:var(--brick); }
+  .btn-danger-outline:hover{ background:var(--brick); color:#fff; }
+  .btn:disabled{ opacity:.6; cursor:default; }
+
+  /* Inputs */
+  .field{ display:flex; flex-direction:column; gap:4px; font-size:14px; }
+  .field input, .field select, .field textarea{
+    border:2px solid var(--border); border-radius:var(--radius); padding:8px 10px;
+    background:var(--surface); color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus, button:focus-visible{
+    outline:2px solid var(--plate); outline-offset:1px;
+  }
+  .search-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .search-row input[type=text]{
+    flex:1; min-width:180px; border:2px solid var(--border); border-radius:var(--radius); padding:9px 12px;
+  }
+
+  /* Stat cards */
+  .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  @media (min-width:700px){ .stats-grid{ grid-template-columns:repeat(4,1fr); } }
+  .stat-card{ background:var(--surface); border:2px solid var(--ink); border-radius:var(--radius); padding:16px; }
+  .stat-card.brick{ border-color:var(--brick); }
+  .stat-card.plate{ border-color:var(--plate); }
+  .stat-card.stud{ border-color:var(--stud); }
+  .stat-card .label{ font-size:13px; color:var(--muted); display:block; margin-bottom:4px; }
+  .stat-card .value{ font-family:var(--font-heading); font-size:28px; }
+
+  /* Cards grid (sets / minifigs) */
+  .cards-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  @media (min-width:640px){ .cards-grid{ grid-template-columns:repeat(3,1fr); } }
+  @media (min-width:960px){ .cards-grid{ grid-template-columns:repeat(4,1fr); } }
+  .card{ background:var(--surface); border:2px solid var(--border); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column; }
+  .card-img{ aspect-ratio:1/1; background:var(--bg); display:flex; align-items:center; justify-content:center; position:relative; }
+  .card-img img{ max-width:100%; max-height:100%; object-fit:contain; padding:10px; }
+  .card-body{ padding:14px; display:flex; flex-direction:column; gap:6px; flex:1; }
+  .card-body .ref{ font-size:12px; color:var(--muted); }
+  .card-body h3{ font-size:16px; line-height:1.25; }
+  .meta-row{ display:flex; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--muted); }
+  .detail-row{ display:flex; gap:14px; flex-wrap:wrap; font-size:14px; }
+  .card-actions{ margin-top:auto; padding-top:10px; display:flex; gap:8px; }
+  .card-actions .btn{ padding:6px 12px; font-size:13px; }
+  .edit-form{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+
+  /* Empty state */
+  .empty-state{
+    border:2px dashed var(--border); border-radius:var(--radius); padding:40px 20px;
+    text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .empty-state h3{ font-size:20px; }
+  .empty-state p{ max-width:360px; color:var(--muted); margin:0; }
+
+  /* Result mini-cards (search results) */
+  .result-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  @media (min-width:640px){ .result-grid{ grid-template-columns:repeat(3,1fr); } }
+  .result-item{
+    display:flex; gap:8px; align-items:center; text-align:left; background:var(--bg);
+    border:2px solid var(--border); border-radius:var(--radius); padding:8px; width:100%;
+  }
+  .result-item:hover{ border-color:var(--stud); }
+  .result-item img{ width:44px; height:44px; object-fit:contain; background:var(--surface); border-radius:4px; padding:2px; }
+  .result-item .rname{ font-size:13px; font-weight:500; }
+  .result-item .rnum{ font-size:11px; color:var(--muted); }
+
+  .panel{ background:var(--surface); border:2px solid var(--border); border-radius:var(--radius); padding:20px; display:flex; flex-direction:column; gap:14px; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-grid .span-2{ grid-column:1/-1; }
+
+  /* Wishlist rows */
+  .wishlist-row{ display:flex; align-items:center; gap:14px; background:var(--surface); border:2px solid var(--border); border-radius:var(--radius); padding:14px; flex-wrap:wrap; }
+  .wishlist-row img{ width:64px; height:64px; object-fit:contain; background:var(--bg); border-radius:4px; padding:4px; }
+  .priority-tag{ font-size:12px; color:#fff; padding:4px 8px; border-radius:var(--radius); }
+  .priority-1{ background:var(--brick); }
+  .priority-2{ background:var(--stud); }
+  .priority-3{ background:var(--border); color:var(--ink); }
+  .wishlist-actions{ display:flex; flex-direction:column; gap:6px; }
+
+  .list-simple{ list-style:none; margin:0; padding:0; border:2px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .list-simple li{ display:flex; justify-content:space-between; padding:12px; background:var(--surface); }
+  .list-simple li + li{ border-top:1px solid var(--border); }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <h1>Ma Briqueothèque</h1>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="dashboard">Tableau de bord</button>
+      <button class="nav-btn" data-view="collection">Ma collection</button>
+      <button class="nav-btn" data-view="minifigs">Minifigs</button>
+      <button class="nav-btn" data-view="wishlist">Liste de souhaits</button>
+      <button class="nav-btn" data-view="add">Ajouter un set</button>
+    </nav>
+  </aside>
+
+  <main>
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section class="view" id="view-dashboard">
+      <div class="page-header">
+        <div>
+          <h2>Tableau de bord</h2>
+          <p class="muted">Vue d'ensemble de ta collection LEGO.</p>
+        </div>
+      </div>
+      <div id="dashboard-content"><p class="muted">Chargement...</p></div>
+    </section>
+
+    <!-- ===================== COLLECTION ===================== -->
+    <section class="view" id="view-collection" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Ma collection</h2>
+          <p class="muted" id="collection-count"></p>
+        </div>
+        <button class="btn btn-primary" data-goto="add">Ajouter un set</button>
+      </div>
+      <div class="search-row">
+        <input type="text" id="collection-search" placeholder="Rechercher par nom ou numéro...">
+        <select id="collection-theme-filter"></select>
+      </div>
+      <div id="collection-content"><p class="muted">Chargement...</p></div>
+    </section>
+
+    <!-- ===================== ADD SET ===================== -->
+    <section class="view" id="view-add" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Ajouter un set</h2>
+          <p class="muted">Recherche par numéro (ex: 75192) ou par nom via Rebrickable.</p>
+        </div>
+      </div>
+      <form class="search-row" id="add-search-form">
+        <input type="text" id="add-search-input" placeholder="Numéro ou nom du set...">
+        <button type="submit" class="btn btn-secondary" id="add-search-btn">Rechercher</button>
+      </form>
+      <p class="error-text" id="add-search-error" hidden></p>
+      <div class="result-grid" id="add-results"></div>
+      <div id="add-detail"></div>
+    </section>
+
+    <!-- ===================== MINIFIGS ===================== -->
+    <section class="view" id="view-minifigs" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Minifigs</h2>
+          <p class="muted" id="minifigs-count"></p>
+        </div>
+      </div>
+      <div class="panel">
+        <form class="search-row" id="minifig-search-form">
+          <input type="text" id="minifig-search-input" placeholder="Rechercher une minifig (ex: Batman)...">
+          <button type="submit" class="btn btn-secondary">Rechercher</button>
+        </form>
+        <div class="result-grid" id="minifig-results"></div>
+      </div>
+      <div id="minifigs-content"><p class="muted">Chargement...</p></div>
+    </section>
+
+    <!-- ===================== WISHLIST ===================== -->
+    <section class="view" id="view-wishlist" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Liste de souhaits</h2>
+          <p class="muted">Les sets que tu prévois d'acheter.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <form class="search-row" id="wishlist-search-form">
+          <input type="text" id="wishlist-search-input" placeholder="Rechercher un set à ajouter...">
+          <select id="wishlist-priority">
+            <option value="1">Priorité haute</option>
+            <option value="2" selected>Priorité moyenne</option>
+            <option value="3">Priorité basse</option>
+          </select>
+          <input type="number" step="0.01" id="wishlist-price" placeholder="Prix estimé (€)" style="width:140px;border:2px solid var(--border);border-radius:6px;padding:9px 12px;">
+          <button type="submit" class="btn btn-secondary">Rechercher</button>
+        </form>
+        <div class="result-grid" id="wishlist-results"></div>
+      </div>
+      <div id="wishlist-content"><p class="muted">Chargement...</p></div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   2) CONFIGURATION — remplis ces 3 valeurs puis sauvegarde
+   ============================================================
+   ATTENTION : ce fichier est 100% côté navigateur (pas de serveur).
+   Ta clé Rebrickable sera donc visible dans le code source par
+   quiconque visite la page. Pour une clé personnelle gratuite,
+   le risque est limité (au pire, quelqu'un consomme ton quota
+   d'appels), mais ne réutilise jamais ici une clé sensible.
+   ============================================================ */
+const SUPABASE_URL = "https://cspvxvagpyxahvdgafnk.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzcHZ4dmFncHl4YWh2ZGdhZm5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMTE2OTMsImV4cCI6MjEwNDg4NzY5M30.BB1MMEZmEaXiwMcAcYYxFk15ZzUcAGNOrIpEwLVkEIo";
+const REBRICKABLE_API_KEY = "89e5b1a8b8cf3ab7c712904da98ba136";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============================================================
+   3) HELPERS REBRICKABLE
+   ============================================================ */
+async function rbFetch(path) {
+  const sep = path.includes("?") ? "&" : "?";
+  const res = await fetch(`https://rebrickable.com/api/v3/lego${path}${sep}key=${REBRICKABLE_API_KEY}`);
+  if (!res.ok) throw new Error(`Erreur Rebrickable (${res.status}). Vérifie ta clé API.`);
+  return res.json();
+}
+const searchSets = (q) => rbFetch(`/sets/?search=${encodeURIComponent(q)}&page_size=20&ordering=-year`);
+const getSetMinifigs = (setNum) => rbFetch(`/sets/${encodeURIComponent(setNum)}/minifigs/?page_size=100`);
+const searchMinifigsApi = (q) => rbFetch(`/minifigs/?search=${encodeURIComponent(q)}&page_size=20`);
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function eur(n) { return n === null || n === undefined || n === "" ? null : Number(n).toFixed(2) + " €"; }
+
+/* ============================================================
+   4) NAVIGATION
+   ============================================================ */
+const views = ["dashboard", "collection", "add", "minifigs", "wishlist"];
+function showView(name) {
+  views.forEach((v) => {
+    document.getElementById(`view-${v}`).hidden = v !== name;
+  });
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.view === name);
+  });
+  if (name === "dashboard") loadDashboard();
+  if (name === "collection") loadCollection();
+  if (name === "minifigs") loadMinifigs();
+  if (name === "wishlist") loadWishlist();
+}
+document.querySelectorAll(".nav-btn").forEach((btn) => {
+  btn.addEventListener("click", () => showView(btn.dataset.view));
+});
+document.querySelectorAll("[data-goto]").forEach((btn) => {
+  btn.addEventListener("click", () => showView(btn.dataset.goto));
+});
+
+/* ============================================================
+   5) DASHBOARD
+   ============================================================ */
+async function loadDashboard() {
+  const el = document.getElementById("dashboard-content");
+  el.innerHTML = `<p class="muted">Chargement...</p>`;
+
+  const [setsRes, minifigsRes, wishlistRes] = await Promise.all([
+    sb.from("owned_sets").select("*").order("created_at", { ascending: false }),
+    sb.from("minifigs").select("id", { count: "exact", head: true }),
+    sb.from("wishlist").select("id", { count: "exact", head: true }),
+  ]);
+
+  if (setsRes.error) {
+    el.innerHTML = `<p class="error-text">Erreur : ${escapeHtml(setsRes.error.message)}</p>`;
+    return;
+  }
+
+  const sets = setsRes.data || [];
+  const totalSets = sets.reduce((s, x) => s + (x.quantity || 0), 0);
+  const totalPieces = sets.reduce((s, x) => s + (x.num_parts || 0) * (x.quantity || 0), 0);
+  const totalPaid = sets.reduce((s, x) => s + (Number(x.price_paid) || 0) * (x.quantity || 0), 0);
+  const totalValue = sets.reduce((s, x) => s + (Number(x.current_value ?? x.price_paid) || 0) * (x.quantity || 0), 0);
+  const minifigCount = minifigsRes.count || 0;
+  const wishlistCount = wishlistRes.count || 0;
+
+  const recent = sets.slice(0, 6).map((s) => `
+    <li>
+      <div>
+        <strong>${escapeHtml(s.name)}</strong><br>
+        <span class="muted">${escapeHtml(s.set_num)} · ${s.year || "—"}</span>
+      </div>
+      <span class="muted">Qté ${s.quantity}</span>
+    </li>`).join("");
+
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card brick"><span class="label">Sets possédés</span><span class="value">${totalSets}</span></div>
+      <div class="stat-card plate"><span class="label">Pièces au total</span><span class="value">${totalPieces.toLocaleString("fr-FR")}</span></div>
+      <div class="stat-card stud"><span class="label">Valeur estimée</span><span class="value">${totalValue.toFixed(2)} €</span></div>
+      <div class="stat-card"><span class="label">Minifigs</span><span class="value">${minifigCount}</span></div>
+    </div>
+    <p class="muted" style="margin-top:-10px;">${totalPaid.toFixed(2)} € dépensés au total · ${wishlistCount} set(s) en liste de souhaits</p>
+    <h3 style="font-size:19px;margin-top:6px;">Ajouts récents</h3>
+    ${sets.length === 0
+      ? `<div class="empty-state"><h3>Ta collection est vide</h3><p>Commence par ajouter ton premier set LEGO.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`
+      : `<ul class="list-simple">${recent}</ul>`
+    }
+  `;
+  el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
+}
+
+/* ============================================================
+   6) COLLECTION
+   ============================================================ */
+let allSets = [];
+
+async function loadCollection() {
+  const el = document.getElementById("collection-content");
+  el.innerHTML = `<p class="muted">Chargement...</p>`;
+  const { data, error } = await sb.from("owned_sets").select("*").order("created_at", { ascending: false });
+  if (error) { el.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`; return; }
+  allSets = data || [];
+  document.getElementById("collection-count").textContent = `${allSets.length} set(s) enregistré(s).`;
+  populateThemeFilter();
+  renderCollection();
+}
+
+function populateThemeFilter() {
+  const select = document.getElementById("collection-theme-filter");
+  const themes = Array.from(new Set(allSets.map((s) => s.theme_name).filter(Boolean))).sort();
+  select.innerHTML = `<option value="Tous">Tous les thèmes</option>` + themes.map((t) => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+}
+
+function renderCollection() {
+  const el = document.getElementById("collection-content");
+  const query = document.getElementById("collection-search").value.toLowerCase();
+  const theme = document.getElementById("collection-theme-filter").value || "Tous";
+
+  const filtered = allSets.filter((s) => {
+    const matchesQuery = !query || s.name.toLowerCase().includes(query) || s.set_num.toLowerCase().includes(query);
+    const matchesTheme = theme === "Tous" || s.theme_name === theme;
+    return matchesQuery && matchesTheme;
+  });
+
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty-state"><h3>${allSets.length === 0 ? "Ta collection est vide" : "Aucun résultat"}</h3><p>${allSets.length === 0 ? "Commence par ajouter ton premier set." : "Essaie une autre recherche."}</p>${allSets.length === 0 ? '<button class="btn btn-primary" data-goto="add">Ajouter un set</button>' : ""}</div>`;
+    el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
+    return;
+  }
+
+  el.innerHTML = `<div class="cards-grid">${filtered.map(setCardHtml).join("")}</div>`;
+  attachCollectionEvents();
+}
+
+function setCardHtml(item) {
+  return `
+  <div class="card" data-id="${item.id}">
+    <div class="card-img">${item.img_url ? `<img src="${escapeHtml(item.img_url)}" alt="${escapeHtml(item.name)}">` : `<span class="muted" style="font-size:13px;">Pas d'image</span>`}</div>
+    <div class="card-body">
+      <span class="ref">${escapeHtml(item.set_num)}</span>
+      <h3>${escapeHtml(item.name)}</h3>
+      <div class="meta-row">
+        ${item.year ? `<span>${item.year}</span>` : ""}
+        ${item.num_parts != null ? `<span>${item.num_parts} pièces</span>` : ""}
+        ${item.theme_name ? `<span>${escapeHtml(item.theme_name)}</span>` : ""}
+      </div>
+      <div class="view-mode">
+        <div class="detail-row">
+          <span>Qté : <strong>${item.quantity}</strong></span>
+          <span>État : <strong>${escapeHtml(item.condition)}</strong></span>
+          ${item.price_paid != null ? `<span>Payé : <strong>${eur(item.price_paid)}</strong></span>` : ""}
+          ${item.current_value != null ? `<span>Valeur : <strong>${eur(item.current_value)}</strong></span>` : ""}
+        </div>
+        ${item.notes ? `<p class="muted" style="font-style:italic;font-size:13px;">${escapeHtml(item.notes)}</p>` : ""}
+        <div class="card-actions">
+          <button class="btn btn-outline btn-edit">Modifier</button>
+          <button class="btn btn-danger-outline btn-delete">Retirer</button>
+        </div>
+      </div>
+      <div class="edit-mode" hidden>
+        <div class="edit-form">
+          <label class="field">Quantité<input type="number" min="1" class="f-quantity" value="${item.quantity}"></label>
+          <label class="field">État
+            <select class="f-condition">
+              <option value="neuf" ${item.condition === "neuf" ? "selected" : ""}>Neuf</option>
+              <option value="occasion" ${item.condition === "occasion" ? "selected" : ""}>Occasion</option>
+            </select>
+          </label>
+          <label class="field">Prix payé (€)<input type="number" step="0.01" class="f-price" value="${item.price_paid ?? ""}"></label>
+          <label class="field">Valeur actuelle (€)<input type="number" step="0.01" class="f-value" value="${item.current_value ?? ""}"></label>
+          <label class="field">Notes<textarea class="f-notes" rows="2">${escapeHtml(item.notes ?? "")}</textarea></label>
+          <div class="card-actions">
+            <button class="btn btn-secondary btn-save">Enregistrer</button>
+            <button class="btn btn-outline btn-cancel">Annuler</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function attachCollectionEvents() {
+  document.querySelectorAll("#collection-content .card").forEach((card) => {
+    const id = card.dataset.id;
+    const viewMode = card.querySelector(".view-mode");
+    const editMode = card.querySelector(".edit-mode");
+
+    card.querySelector(".btn-edit").addEventListener("click", () => {
+      viewMode.hidden = true; editMode.hidden = false;
+    });
+    card.querySelector(".btn-cancel").addEventListener("click", () => {
+      viewMode.hidden = false; editMode.hidden = true;
+    });
+    card.querySelector(".btn-delete").addEventListener("click", async () => {
+      if (!confirm("Retirer ce set de ta collection ?")) return;
+      const { error } = await sb.from("owned_sets").delete().eq("id", id);
+      if (!error) { allSets = allSets.filter((s) => s.id !== id); renderCollection(); }
+    });
+    card.querySelector(".btn-save").addEventListener("click", async () => {
+      const patch = {
+        quantity: Number(card.querySelector(".f-quantity").value) || 1,
+        condition: card.querySelector(".f-condition").value,
+        price_paid: card.querySelector(".f-price").value === "" ? null : Number(card.querySelector(".f-price").value),
+        current_value: card.querySelector(".f-value").value === "" ? null : Number(card.querySelector(".f-value").value),
+        notes: card.querySelector(".f-notes").value || null,
+      };
+      const { error } = await sb.from("owned_sets").update(patch).eq("id", id);
+      if (!error) {
+        allSets = allSets.map((s) => (s.id === id ? { ...s, ...patch } : s));
+        renderCollection();
+      }
+    });
+  });
+}
+
+document.getElementById("collection-search").addEventListener("input", renderCollection);
+document.getElementById("collection-theme-filter").addEventListener("change", renderCollection);
+
+/* ============================================================
+   7) AJOUTER UN SET
+   ============================================================ */
+let addSelectedSet = null;
+let addSetMinifigs = [];
+
+document.getElementById("add-search-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const q = document.getElementById("add-search-input").value.trim();
+  if (q.length < 2) return;
+  const errorEl = document.getElementById("add-search-error");
+  const btn = document.getElementById("add-search-btn");
+  errorEl.hidden = true;
+  document.getElementById("add-detail").innerHTML = "";
+  btn.disabled = true; btn.textContent = "Recherche...";
+  try {
+    const data = await searchSets(q);
+    renderAddResults(data.results || []);
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.hidden = false;
+  } finally {
+    btn.disabled = false; btn.textContent = "Rechercher";
+  }
+});
+
+function renderAddResults(results) {
+  const el = document.getElementById("add-results");
+  el.innerHTML = results.map((set, i) => `
+    <button type="button" class="result-item" data-index="${i}">
+      ${set.set_img_url ? `<img src="${escapeHtml(set.set_img_url)}" alt="">` : ""}
+      <span>
+        <span class="rname">${escapeHtml(set.name)}</span><br>
+        <span class="rnum">${escapeHtml(set.set_num)} · ${set.year || "—"} · ${set.num_parts ?? "?"} pièces</span>
+      </span>
+    </button>`).join("");
+  el.querySelectorAll(".result-item").forEach((btn) => {
+    btn.addEventListener("click", () => selectSetToAdd(results[Number(btn.dataset.index)]));
+  });
+}
+
+async function selectSetToAdd(set) {
+  addSelectedSet = set;
+  addSetMinifigs = [];
+  document.getElementById("add-results").innerHTML = "";
+  renderAddDetail(true);
+  try {
+    const data = await getSetMinifigs(set.set_num);
+    addSetMinifigs = data.results || [];
+  } catch (err) {
+    addSetMinifigs = [];
+  }
+  renderAddDetail(false);
+}
+
+function renderAddDetail(loading) {
+  const el = document.getElementById("add-detail");
+  const set = addSelectedSet;
+  if (!set) { el.innerHTML = ""; return; }
+
+  el.innerHTML = `
+    <div class="panel">
+      <div style="display:flex;gap:14px;align-items:center;">
+        <img src="${escapeHtml(set.set_img_url || "")}" alt="" style="width:80px;height:80px;object-fit:contain;background:var(--bg);border-radius:6px;padding:4px;">
+        <div>
+          <h3 style="font-size:18px;">${escapeHtml(set.name)}</h3>
+          <p class="muted">${escapeHtml(set.set_num)} · ${set.year || "—"} · ${set.num_parts ?? "?"} pièces</p>
+        </div>
+      </div>
+      ${loading ? `<p class="muted">Chargement des minifigs...</p>` : addSetMinifigs.length > 0 ? `<p class="muted">${addSetMinifigs.length} minifig(s) trouvée(s) dans ce set.</p>` : ""}
+      <form id="add-set-form" class="form-grid">
+        <label class="field">Quantité<input type="number" min="1" id="af-quantity" value="1"></label>
+        <label class="field">État
+          <select id="af-condition"><option value="neuf">Neuf</option><option value="occasion">Occasion</option></select>
+        </label>
+        <label class="field">Prix payé (€)<input type="number" step="0.01" id="af-price"></label>
+        <label class="field">Date d'achat<input type="date" id="af-date"></label>
+        <label class="field span-2">Notes<textarea id="af-notes" rows="2"></textarea></label>
+        ${addSetMinifigs.length > 0 ? `
+        <label class="field span-2" style="flex-direction:row;align-items:center;gap:8px;">
+          <input type="checkbox" id="af-include-minifigs" checked style="width:auto;">
+          Ajouter aussi les ${addSetMinifigs.length} minifig(s) de ce set à ma collection
+        </label>` : ""}
+        <p class="error-text span-2" id="add-set-error" hidden></p>
+        <p class="success-text span-2" id="add-set-success" hidden></p>
+        <div class="span-2" style="display:flex;gap:8px;">
+          <button type="submit" class="btn btn-primary" id="add-set-submit">Ajouter à ma collection</button>
+          <button type="button" class="btn btn-outline" id="add-set-cancel">Choisir un autre set</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.getElementById("add-set-cancel").addEventListener("click", () => {
+    addSelectedSet = null; addSetMinifigs = [];
+    document.getElementById("add-detail").innerHTML = "";
+  });
+
+  document.getElementById("add-set-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById("add-set-submit");
+    const errorEl = document.getElementById("add-set-error");
+    const successEl = document.getElementById("add-set-success");
+    errorEl.hidden = true; successEl.hidden = true;
+    submitBtn.disabled = true; submitBtn.textContent = "Ajout en cours...";
+
+    const includeMinifigs = document.getElementById("af-include-minifigs")?.checked ?? false;
+
+    const { data: inserted, error } = await sb.from("owned_sets").insert({
+      set_num: set.set_num,
+      name: set.name,
+      year: set.year,
+      theme_name: set.theme_name || null,
+      num_parts: set.num_parts,
+      img_url: set.set_img_url,
+      quantity: Number(document.getElementById("af-quantity").value) || 1,
+      condition: document.getElementById("af-condition").value,
+      price_paid: document.getElementById("af-price").value === "" ? null : Number(document.getElementById("af-price").value),
+      purchase_date: document.getElementById("af-date").value || null,
+      notes: document.getElementById("af-notes").value || null,
+    }).select().single();
+
+    if (error) {
+      errorEl.textContent = error.message; errorEl.hidden = false;
+      submitBtn.disabled = false; submitBtn.textContent = "Ajouter à ma collection";
+      return;
+    }
+
+    if (includeMinifigs && addSetMinifigs.length > 0) {
+      const rows = addSetMinifigs.map((m) => ({
+        fig_num: m.set_num,
+        name: m.set_name,
+        img_url: m.set_img_url,
+        quantity: m.quantity || 1,
+        owned_set_id: inserted.id,
+        condition: document.getElementById("af-condition").value,
+      }));
+      await sb.from("minifigs").insert(rows);
+    }
+
+    successEl.textContent = "Set ajouté avec succès !"; successEl.hidden = false;
+    submitBtn.disabled = false; submitBtn.textContent = "Ajouter à ma collection";
+    setTimeout(() => {
+      addSelectedSet = null; addSetMinifigs = [];
+      document.getElementById("add-detail").innerHTML = "";
+      document.getElementById("add-search-input").value = "";
+      showView("collection");
+    }, 900);
+  });
+}
+
+/* ============================================================
+   8) MINIFIGS
+   ============================================================ */
+let allMinifigs = [];
+
+async function loadMinifigs() {
+  const el = document.getElementById("minifigs-content");
+  el.innerHTML = `<p class="muted">Chargement...</p>`;
+  const { data, error } = await sb.from("minifigs").select("*").order("created_at", { ascending: false });
+  if (error) { el.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`; return; }
+  allMinifigs = data || [];
+  document.getElementById("minifigs-count").textContent = `${allMinifigs.length} minifig(s) enregistrée(s).`;
+  renderMinifigs();
+}
+
+function renderMinifigs() {
+  const el = document.getElementById("minifigs-content");
+  if (allMinifigs.length === 0) {
+    el.innerHTML = `<div class="empty-state"><h3>Aucune minifig enregistrée</h3><p>Ajoute des minifigs en recherchant ci-dessus, ou en cochant l'option lors de l'ajout d'un set.</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="cards-grid">${allMinifigs.map((m) => `
+    <div class="card" data-id="${m.id}">
+      <div class="card-img">${m.img_url ? `<img src="${escapeHtml(m.img_url)}" alt="${escapeHtml(m.name)}">` : `<span class="muted" style="font-size:13px;">Pas d'image</span>`}</div>
+      <div class="card-body">
+        ${m.fig_num ? `<span class="ref">${escapeHtml(m.fig_num)}</span>` : ""}
+        <h3 style="font-size:15px;">${escapeHtml(m.name)}</h3>
+        <div class="meta-row"><span>Qté : ${m.quantity}</span><span>${escapeHtml(m.condition)}</span></div>
+        ${m.price_paid != null ? `<span style="font-size:13px;">Payé : ${eur(m.price_paid)}</span>` : ""}
+        <div class="card-actions"><button class="btn btn-danger-outline btn-delete-fig">Retirer</button></div>
+      </div>
+    </div>`).join("")}</div>`;
+
+  el.querySelectorAll(".btn-delete-fig").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest(".card").dataset.id;
+      const { error } = await sb.from("minifigs").delete().eq("id", id);
+      if (!error) { allMinifigs = allMinifigs.filter((m) => m.id !== id); renderMinifigs(); }
+    });
+  });
+}
+
+document.getElementById("minifig-search-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const q = document.getElementById("minifig-search-input").value.trim();
+  if (q.length < 2) return;
+  const data = await searchMinifigsApi(q);
+  const results = data.results || [];
+  const el = document.getElementById("minifig-results");
+  el.innerHTML = results.map((fig, i) => `
+    <button type="button" class="result-item" data-index="${i}">
+      ${fig.set_img_url ? `<img src="${escapeHtml(fig.set_img_url)}" alt="">` : ""}
+      <span><span class="rname">${escapeHtml(fig.set_name)}</span><br><span class="rnum">${escapeHtml(fig.set_num)}</span></span>
+    </button>`).join("");
+  el.querySelectorAll(".result-item").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const fig = results[Number(btn.dataset.index)];
+      const { data: inserted, error } = await sb.from("minifigs").insert({
+        fig_num: fig.set_num, name: fig.set_name, img_url: fig.set_img_url, quantity: 1, condition: "neuf",
+      }).select().single();
+      if (!error) {
+        allMinifigs = [inserted, ...allMinifigs];
+        renderMinifigs();
+        el.innerHTML = "";
+        document.getElementById("minifig-search-input").value = "";
+      }
+    });
+  });
+});
+
+/* ============================================================
+   9) WISHLIST
+   ============================================================ */
+let allWishlist = [];
+
+async function loadWishlist() {
+  const el = document.getElementById("wishlist-content");
+  el.innerHTML = `<p class="muted">Chargement...</p>`;
+  const { data, error } = await sb.from("wishlist").select("*").order("priority", { ascending: true }).order("created_at", { ascending: false });
+  if (error) { el.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`; return; }
+  allWishlist = data || [];
+  renderWishlist();
+}
+
+function renderWishlist() {
+  const el = document.getElementById("wishlist-content");
+  if (allWishlist.length === 0) {
+    el.innerHTML = `<div class="empty-state"><h3>Aucun set en liste de souhaits</h3><p>Recherche un set ci-dessus pour l'ajouter à ta liste.</p></div>`;
+    return;
+  }
+  const labels = { 1: "Haute", 2: "Moyenne", 3: "Basse" };
+  el.innerHTML = allWishlist.map((item) => `
+    <div class="wishlist-row" data-id="${item.id}">
+      <img src="${escapeHtml(item.img_url || "")}" alt="">
+      <div style="flex:1;min-width:150px;">
+        <span class="ref">${escapeHtml(item.set_num)}</span>
+        <h3 style="font-size:16px;">${escapeHtml(item.name)}</h3>
+        <div class="meta-row">${item.year ? `<span>${item.year}</span>` : ""}${item.estimated_price != null ? `<span>${eur(item.estimated_price)} estimé</span>` : ""}</div>
+      </div>
+      <span class="priority-tag priority-${item.priority}">Priorité ${labels[item.priority]}</span>
+      <div class="wishlist-actions">
+        <button class="btn btn-secondary btn-move">J'ai acheté ce set</button>
+        <button class="btn btn-outline btn-remove">Retirer</button>
+      </div>
+    </div>`).join("");
+
+  el.querySelectorAll(".wishlist-row").forEach((row) => {
+    const id = row.dataset.id;
+    const item = allWishlist.find((i) => i.id === id);
+    row.querySelector(".btn-remove").addEventListener("click", async () => {
+      const { error } = await sb.from("wishlist").delete().eq("id", id);
+      if (!error) { allWishlist = allWishlist.filter((i) => i.id !== id); renderWishlist(); }
+    });
+    row.querySelector(".btn-move").addEventListener("click", async () => {
+      const { error: insertError } = await sb.from("owned_sets").insert({
+        set_num: item.set_num, name: item.name, year: item.year, theme_name: item.theme_name,
+        num_parts: item.num_parts, img_url: item.img_url, quantity: 1, condition: "neuf",
+        price_paid: item.estimated_price,
+      });
+      if (!insertError) {
+        await sb.from("wishlist").delete().eq("id", id);
+        allWishlist = allWishlist.filter((i) => i.id !== id);
+        renderWishlist();
+      }
+    });
+  });
+}
+
+document.getElementById("wishlist-search-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const q = document.getElementById("wishlist-search-input").value.trim();
+  if (q.length < 2) return;
+  const data = await searchSets(q);
+  const results = data.results || [];
+  const el = document.getElementById("wishlist-results");
+  el.innerHTML = results.map((set, i) => `
+    <button type="button" class="result-item" data-index="${i}">
+      ${set.set_img_url ? `<img src="${escapeHtml(set.set_img_url)}" alt="">` : ""}
+      <span><span class="rname">${escapeHtml(set.name)}</span><br><span class="rnum">${escapeHtml(set.set_num)}</span></span>
+    </button>`).join("");
+  el.querySelectorAll(".result-item").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const set = results[Number(btn.dataset.index)];
+      const priority = Number(document.getElementById("wishlist-priority").value);
+      const priceVal = document.getElementById("wishlist-price").value;
+      const { data: inserted, error } = await sb.from("wishlist").insert({
+        set_num: set.set_num, name: set.name, year: set.year, theme_name: set.theme_name || null,
+        num_parts: set.num_parts, img_url: set.set_img_url,
+        estimated_price: priceVal === "" ? null : Number(priceVal), priority,
+      }).select().single();
+      if (!error) {
+        allWishlist = [inserted, ...allWishlist];
+        renderWishlist();
+        el.innerHTML = "";
+        document.getElementById("wishlist-search-input").value = "";
+        document.getElementById("wishlist-price").value = "";
+      }
+    });
+  });
+});
+
+/* ============================================================
+   10) DÉMARRAGE
+   ============================================================ */
+loadDashboard();
+</script>
+</body>
+</html>
