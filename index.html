@@ -405,7 +405,8 @@
         <button class="btn btn-primary" id="opt-save">Enregistrer les options</button>
         <span class="success-text" id="opt-saved" hidden>Options enregistrées.</span>
       </div>
-      <p class="muted" style="font-size:12px;">Ces réglages s'appliquent le temps de ta session (ils repartent à zéro si tu recharges la page). Dis-moi si tu veux qu'ils soient mémorisés de façon permanente, par exemple via une table dédiée dans Supabase.</p>
+      <p class="error-text" id="opt-error" hidden></p>
+      <p class="muted" style="font-size:12px;">Ces réglages sont enregistrés dans Supabase (table <code>app_settings</code>) et retrouvés à chaque ouverture de l'application.</p>
     </section>
 
   </main>
@@ -424,6 +425,22 @@
 const SUPABASE_URL = "https://cspvxvagpyxahvdgafnk.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzcHZ4dmFncHl4YWh2ZGdhZm5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMTE2OTMsImV4cCI6MjEwNDg4NzY5M30.BB1MMEZmEaXiwMcAcYYxFk15ZzUcAGNOrIpEwLVkEIo";
 const REBRICKABLE_API_KEY = "89e5b1a8b8cf3ab7c712904da98ba136";
+
+if (typeof supabase === "undefined") {
+  document.body.innerHTML = `
+    <div style="max-width:560px;margin:60px auto;padding:28px;font-family:sans-serif;background:#fff;border:2px solid #E2231A;border-radius:12px;">
+      <h1 style="color:#E2231A;font-size:20px;">La librairie Supabase n'a pas pu être chargée</h1>
+      <p>Le fichier <code>index.html</code> a besoin d'accéder à <code>cdn.jsdelivr.net</code> pour fonctionner (il charge la librairie Supabase depuis internet).</p>
+      <p>Vérifie que :</p>
+      <ul>
+        <li>tu es bien connecté à internet ;</li>
+        <li>aucun bloqueur de scripts / pare-feu / réseau d'entreprise ne bloque <code>cdn.jsdelivr.net</code> ;</li>
+        <li>tu ouvres bien le fichier dans un vrai navigateur (Chrome, Firefox, Safari...) et pas dans un aperçu qui bloque les scripts externes.</li>
+      </ul>
+      <p>Ouvre la console du navigateur (touche F12, onglet "Console") pour voir le détail de l'erreur si le problème persiste.</p>
+    </div>`;
+  throw new Error("supabase-js n'est pas chargé (CDN bloqué ou hors-ligne).");
+}
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -482,13 +499,54 @@ function renderOptionsView() {
   document.getElementById("opt-currency").value = appSettings.currency;
 }
 
-document.getElementById("opt-save").addEventListener("click", () => {
+async function loadAppSettings() {
+  try {
+    const { data, error } = await sb.from("app_settings").select("*").eq("id", 1).single();
+    if (!error && data) {
+      appSettings.autoRefresh = !!data.auto_refresh;
+      appSettings.refreshSeconds = data.refresh_seconds || 60;
+      appSettings.includeMinifigsDefault = data.include_minifigs_default !== false;
+      appSettings.currency = data.currency || "EUR";
+      applyAutoRefresh();
+    }
+  } catch (e) {
+    // Table "app_settings" pas encore créée : on reste sur les valeurs par défaut.
+  }
+}
+
+async function saveAppSettings() {
+  const payload = {
+    id: 1,
+    auto_refresh: appSettings.autoRefresh,
+    refresh_seconds: appSettings.refreshSeconds,
+    include_minifigs_default: appSettings.includeMinifigsDefault,
+    currency: appSettings.currency,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await sb.from("app_settings").upsert(payload);
+  return error;
+}
+
+document.getElementById("opt-save").addEventListener("click", async () => {
+  const saveBtn = document.getElementById("opt-save");
+  const savedEl = document.getElementById("opt-saved");
+  const errorEl = document.getElementById("opt-error");
+  errorEl.hidden = true;
   appSettings.autoRefresh = document.getElementById("opt-autorefresh").checked;
   appSettings.refreshSeconds = Number(document.getElementById("opt-refresh-interval").value);
   appSettings.includeMinifigsDefault = document.getElementById("opt-include-minifigs").checked;
   appSettings.currency = document.getElementById("opt-currency").value;
   applyAutoRefresh();
-  const savedEl = document.getElementById("opt-saved");
+
+  saveBtn.disabled = true; saveBtn.textContent = "Enregistrement...";
+  const error = await saveAppSettings();
+  saveBtn.disabled = false; saveBtn.textContent = "Enregistrer les options";
+
+  if (error) {
+    errorEl.textContent = "Impossible d'enregistrer sur Supabase (table \"app_settings\" manquante ?). Les réglages restent actifs pour cette session. Voir le message ci-dessous pour créer la table.";
+    errorEl.hidden = false;
+    return;
+  }
   savedEl.hidden = false;
   setTimeout(() => { savedEl.hidden = true; }, 2500);
 });
@@ -912,3 +970,103 @@ document.getElementById("minifig-search-form").addEventListener("submit", async 
         renderMinifigs();
         el.innerHTML = "";
         document.getElementById("minifig-search-input").value = "";
+      }
+    });
+  });
+});
+
+/* ============================================================
+   9) WISHLIST
+   ============================================================ */
+let allWishlist = [];
+
+async function loadWishlist() {
+  const el = document.getElementById("wishlist-content");
+  el.innerHTML = `<p class="muted">Chargement...</p>`;
+  const { data, error } = await sb.from("wishlist").select("*").order("priority", { ascending: true }).order("created_at", { ascending: false });
+  if (error) { el.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`; return; }
+  allWishlist = data || [];
+  renderWishlist();
+}
+
+function renderWishlist() {
+  const el = document.getElementById("wishlist-content");
+  if (allWishlist.length === 0) {
+    el.innerHTML = `<div class="empty-state"><h3>Aucun set en liste de souhaits</h3><p>Recherche un set ci-dessus pour l'ajouter à ta liste.</p></div>`;
+    return;
+  }
+  const labels = { 1: "Haute", 2: "Moyenne", 3: "Basse" };
+  el.innerHTML = allWishlist.map((item) => `
+    <div class="wishlist-row" data-id="${item.id}">
+      <img src="${escapeHtml(item.img_url || "")}" alt="">
+      <div style="flex:1;min-width:150px;">
+        <span class="ref">${escapeHtml(item.set_num)}</span>
+        <h3 style="font-size:16px;">${escapeHtml(item.name)}</h3>
+        <div class="meta-row">${item.year ? `<span>${item.year}</span>` : ""}${item.estimated_price != null ? `<span>${eur(item.estimated_price)} estimé</span>` : ""}</div>
+      </div>
+      <span class="priority-tag priority-${item.priority}">Priorité ${labels[item.priority]}</span>
+      <div class="wishlist-actions">
+        <button class="btn btn-secondary btn-move">J'ai acheté ce set</button>
+        <button class="btn btn-outline btn-remove">Retirer</button>
+      </div>
+    </div>`).join("");
+
+  el.querySelectorAll(".wishlist-row").forEach((row) => {
+    const id = row.dataset.id;
+    const item = allWishlist.find((i) => i.id === id);
+    row.querySelector(".btn-remove").addEventListener("click", async () => {
+      const { error } = await sb.from("wishlist").delete().eq("id", id);
+      if (!error) { allWishlist = allWishlist.filter((i) => i.id !== id); renderWishlist(); }
+    });
+    row.querySelector(".btn-move").addEventListener("click", async () => {
+      const { error: insertError } = await sb.from("owned_sets").insert({
+        set_num: item.set_num, name: item.name, year: item.year, theme_name: item.theme_name,
+        num_parts: item.num_parts, img_url: item.img_url, quantity: 1, condition: "neuf",
+        price_paid: item.estimated_price,
+      });
+      if (!insertError) {
+        await sb.from("wishlist").delete().eq("id", id);
+        allWishlist = allWishlist.filter((i) => i.id !== id);
+        renderWishlist();
+      }
+    });
+  });
+}
+
+document.getElementById("wishlist-search-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const q = document.getElementById("wishlist-search-input").value.trim();
+  if (q.length < 2) return;
+  const data = await searchSets(q);
+  const results = data.results || [];
+  const el = document.getElementById("wishlist-results");
+  el.innerHTML = results.map((set, i) => `
+    <button type="button" class="result-item" data-index="${i}">
+      ${set.set_img_url ? `<img src="${escapeHtml(set.set_img_url)}" alt="">` : ""}
+      <span><span class="rname">${escapeHtml(set.name)}</span><br><span class="rnum">${escapeHtml(set.set_num)}</span></span>
+    </button>`).join("");
+  el.querySelectorAll(".result-item").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const set = results[Number(btn.dataset.index)];
+      const priority = Number(document.getElementById("wishlist-priority").value);
+      const priceVal = document.getElementById("wishlist-price").value;
+      const { data: inserted, error } = await sb.from("wishlist").insert({
+        set_num: set.set_num, name: set.name, year: set.year, theme_name: set.theme_name || null,
+        num_parts: set.num_parts, img_url: set.set_img_url,
+        estimated_price: priceVal === "" ? null : Number(priceVal), priority,
+      }).select().single();
+      if (!error) {
+        allWishlist = [inserted, ...allWishlist];
+        renderWishlist();
+        el.innerHTML = "";
+        document.getElementById("wishlist-search-input").value = "";
+        document.getElementById("wishlist-price").value = "";
+      }
+    });
+  });
+});
+
+/* ============================================================
+   10) DÉMARRAGE
+   ============================================================ */
+loadAppSettings().then(loadDashboard);
