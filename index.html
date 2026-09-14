@@ -722,7 +722,7 @@ async function rbFetch(path) {
   return res.json();
 }
 const searchSets = (q) => rbFetch(`/sets/?search=${encodeURIComponent(q)}&page_size=20&ordering=-year`);
-const getLatestReleasedSets = () => rbFetch(`/sets/?ordering=-year,-set_num&page_size=5`);
+const getLatestReleasedSets = () => rbFetch(`/sets/?ordering=-year,-set_num&min_parts=1&page_size=8`);
 const getSetMinifigs = (setNum) => rbFetch(`/sets/${encodeURIComponent(setNum)}/minifigs/?page_size=100`);
 const searchMinifigsApi = (q) => rbFetch(`/minifigs/?search=${encodeURIComponent(q)}&page_size=20`);
 
@@ -989,7 +989,9 @@ async function loadDashboard() {
   const totalValue = sets.reduce((s, x) => s + (Number(x.current_value ?? x.price_paid) || 0) * (x.quantity || 0), 0);
   const minifigCount = minifigsRes.count || 0;
   const wishlistCount = wishlistRes.count || 0;
-  const latestSets = latestSetsResult?.results || [];
+  const latestSets = (latestSetsResult?.results || [])
+    .filter((s) => (s.num_parts || 0) > 0)
+    .slice(0, 5);
 
   const newsHtml = latestSets.length === 0
     ? `<p class="muted">Actualités indisponibles pour le moment (Rebrickable injoignable).</p>`
