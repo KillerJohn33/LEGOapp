@@ -499,9 +499,19 @@ function renderOptionsView() {
   document.getElementById("opt-currency").value = appSettings.currency;
 }
 
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
 async function loadAppSettings() {
   try {
-    const { data, error } = await sb.from("app_settings").select("*").eq("id", 1).single();
+    const { data, error } = await withTimeout(
+      sb.from("app_settings").select("*").eq("id", 1).single(),
+      6000
+    );
     if (!error && data) {
       appSettings.autoRefresh = !!data.auto_refresh;
       appSettings.refreshSeconds = data.refresh_seconds || 60;
@@ -510,7 +520,7 @@ async function loadAppSettings() {
       applyAutoRefresh();
     }
   } catch (e) {
-    // Table "app_settings" pas encore créée : on reste sur les valeurs par défaut.
+    // Table "app_settings" pas encore créée, ou requête trop lente : on reste sur les valeurs par défaut.
   }
 }
 
@@ -1069,4 +1079,8 @@ document.getElementById("wishlist-search-form").addEventListener("submit", async
 /* ============================================================
    10) DÉMARRAGE
    ============================================================ */
-loadAppSettings().then(loadDashboard);
+loadDashboard();
+loadAppSettings();
+</script>
+</body>
+</html>
