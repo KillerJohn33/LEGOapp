@@ -145,7 +145,7 @@
   }
 
   /* Stat cards -> briques LEGO colorées */
-  .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:22px 16px; }
+  .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:22px 16px; margin-bottom:6px; }
   @media (min-width:700px){ .stats-grid{ grid-template-columns:repeat(4,1fr); } }
 
   .brick-stat{
@@ -261,6 +261,7 @@
       <button class="nav-btn" data-view="collection">Ma collection</button>
       <button class="nav-btn" data-view="minifigs">Minifigs</button>
       <button class="nav-btn" data-view="wishlist">Liste de souhaits</button>
+      <button class="nav-btn" data-view="options">Options</button>
     </nav>
   </aside>
 
@@ -353,6 +354,60 @@
       <div id="wishlist-content"><p class="muted">Chargement...</p></div>
     </section>
 
+    <!-- ===================== OPTIONS ===================== -->
+    <section class="view" id="view-options" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Options</h2>
+          <p class="muted">Réglages de l'application.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 style="font-size:17px;">Actualisation des données</h3>
+        <p class="muted" style="font-size:13px;margin:0;">Recharge automatiquement les données affichées (tableau de bord, collection, minifigs, liste de souhaits) pendant que tu es sur la page.</p>
+        <label class="field" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="opt-autorefresh" style="width:auto;">
+          Activer le rafraîchissement automatique
+        </label>
+        <label class="field" style="max-width:260px;">
+          Fréquence
+          <select id="opt-refresh-interval">
+            <option value="15">Toutes les 15 secondes</option>
+            <option value="30">Toutes les 30 secondes</option>
+            <option value="60" selected>Toutes les minutes</option>
+            <option value="300">Toutes les 5 minutes</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h3 style="font-size:17px;">Ajout de sets</h3>
+        <label class="field" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="opt-include-minifigs" checked style="width:auto;">
+          Cocher automatiquement « Ajouter aussi les minifigs » lors de l'ajout d'un set
+        </label>
+      </div>
+
+      <div class="panel">
+        <h3 style="font-size:17px;">Affichage</h3>
+        <label class="field" style="max-width:260px;">
+          Devise affichée
+          <select id="opt-currency">
+            <option value="EUR" selected>Euro (€)</option>
+            <option value="USD">Dollar US ($)</option>
+            <option value="GBP">Livre sterling (£)</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary" id="opt-save">Enregistrer les options</button>
+        <span class="success-text" id="opt-saved" hidden>Options enregistrées.</span>
+      </div>
+      <p class="muted" style="font-size:12px;">Ces réglages s'appliquent le temps de ta session (ils repartent à zéro si tu recharges la page). Dis-moi si tu veux qu'ils soient mémorisés de façon permanente, par exemple via une table dédiée dans Supabase.</p>
+    </section>
+
   </main>
 </div>
 
@@ -389,12 +444,59 @@ function escapeHtml(str) {
   if (str === null || str === undefined) return "";
   return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
-function eur(n) { return n === null || n === undefined || n === "" ? null : Number(n).toFixed(2) + " €"; }
+function eur(n) {
+  if (n === null || n === undefined || n === "") return null;
+  const symbols = { EUR: "€", USD: "$", GBP: "£" };
+  const symbol = symbols[appSettings.currency] || "€";
+  return Number(n).toFixed(2) + " " + symbol;
+}
+
+/* ============================================================
+   3bis) OPTIONS / RÉGLAGES (valables pour la session en cours)
+   ============================================================ */
+const appSettings = {
+  autoRefresh: false,
+  refreshSeconds: 60,
+  includeMinifigsDefault: true,
+  currency: "EUR",
+};
+let autoRefreshTimer = null;
+
+function applyAutoRefresh() {
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  if (appSettings.autoRefresh) {
+    autoRefreshTimer = setInterval(() => {
+      const current = views.find((v) => !document.getElementById(`view-${v}`).hidden);
+      if (current === "dashboard") loadDashboard();
+      if (current === "collection") loadCollection();
+      if (current === "minifigs") loadMinifigs();
+      if (current === "wishlist") loadWishlist();
+    }, appSettings.refreshSeconds * 1000);
+  }
+}
+
+function renderOptionsView() {
+  document.getElementById("opt-autorefresh").checked = appSettings.autoRefresh;
+  document.getElementById("opt-refresh-interval").value = String(appSettings.refreshSeconds);
+  document.getElementById("opt-include-minifigs").checked = appSettings.includeMinifigsDefault;
+  document.getElementById("opt-currency").value = appSettings.currency;
+}
+
+document.getElementById("opt-save").addEventListener("click", () => {
+  appSettings.autoRefresh = document.getElementById("opt-autorefresh").checked;
+  appSettings.refreshSeconds = Number(document.getElementById("opt-refresh-interval").value);
+  appSettings.includeMinifigsDefault = document.getElementById("opt-include-minifigs").checked;
+  appSettings.currency = document.getElementById("opt-currency").value;
+  applyAutoRefresh();
+  const savedEl = document.getElementById("opt-saved");
+  savedEl.hidden = false;
+  setTimeout(() => { savedEl.hidden = true; }, 2500);
+});
 
 /* ============================================================
    4) NAVIGATION
    ============================================================ */
-const views = ["dashboard", "collection", "add", "minifigs", "wishlist"];
+const views = ["dashboard", "collection", "add", "minifigs", "wishlist", "options"];
 function showView(name) {
   views.forEach((v) => {
     document.getElementById(`view-${v}`).hidden = v !== name;
@@ -406,6 +508,7 @@ function showView(name) {
   if (name === "collection") loadCollection();
   if (name === "minifigs") loadMinifigs();
   if (name === "wishlist") loadWishlist();
+  if (name === "options") renderOptionsView();
 }
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => showView(btn.dataset.view));
@@ -456,7 +559,7 @@ async function loadDashboard() {
       <div class="brick-stat brick-blue"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Valeur estimée</span><span class="value">${totalValue.toFixed(2)} €</span></div>
       <div class="brick-stat brick-green"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Minifigs</span><span class="value">${minifigCount}</span></div>
     </div>
-    <p class="muted" style="margin-top:-10px;">${totalPaid.toFixed(2)} € dépensés au total · ${wishlistCount} set(s) en liste de souhaits</p>
+    <p class="muted" style="margin-top:10px;">${totalPaid.toFixed(2)} € dépensés au total · ${wishlistCount} set(s) en liste de souhaits</p>
     <h3 style="font-size:19px;margin-top:6px;">Ajouts récents</h3>
     ${sets.length === 0
       ? `<div class="empty-state"><h3>Ta collection est vide</h3><p>Commence par ajouter ton premier set LEGO.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`
@@ -673,7 +776,7 @@ function renderAddDetail(loading) {
         <label class="field span-2">Notes<textarea id="af-notes" rows="2"></textarea></label>
         ${addSetMinifigs.length > 0 ? `
         <label class="field span-2" style="flex-direction:row;align-items:center;gap:8px;">
-          <input type="checkbox" id="af-include-minifigs" checked style="width:auto;">
+          <input type="checkbox" id="af-include-minifigs" ${appSettings.includeMinifigsDefault ? "checked" : ""} style="width:auto;">
           Ajouter aussi les ${addSetMinifigs.length} minifig(s) de ce set à ma collection
         </label>` : ""}
         <p class="error-text span-2" id="add-set-error" hidden></p>
@@ -809,106 +912,3 @@ document.getElementById("minifig-search-form").addEventListener("submit", async 
         renderMinifigs();
         el.innerHTML = "";
         document.getElementById("minifig-search-input").value = "";
-      }
-    });
-  });
-});
-
-/* ============================================================
-   9) WISHLIST
-   ============================================================ */
-let allWishlist = [];
-
-async function loadWishlist() {
-  const el = document.getElementById("wishlist-content");
-  el.innerHTML = `<p class="muted">Chargement...</p>`;
-  const { data, error } = await sb.from("wishlist").select("*").order("priority", { ascending: true }).order("created_at", { ascending: false });
-  if (error) { el.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`; return; }
-  allWishlist = data || [];
-  renderWishlist();
-}
-
-function renderWishlist() {
-  const el = document.getElementById("wishlist-content");
-  if (allWishlist.length === 0) {
-    el.innerHTML = `<div class="empty-state"><h3>Aucun set en liste de souhaits</h3><p>Recherche un set ci-dessus pour l'ajouter à ta liste.</p></div>`;
-    return;
-  }
-  const labels = { 1: "Haute", 2: "Moyenne", 3: "Basse" };
-  el.innerHTML = allWishlist.map((item) => `
-    <div class="wishlist-row" data-id="${item.id}">
-      <img src="${escapeHtml(item.img_url || "")}" alt="">
-      <div style="flex:1;min-width:150px;">
-        <span class="ref">${escapeHtml(item.set_num)}</span>
-        <h3 style="font-size:16px;">${escapeHtml(item.name)}</h3>
-        <div class="meta-row">${item.year ? `<span>${item.year}</span>` : ""}${item.estimated_price != null ? `<span>${eur(item.estimated_price)} estimé</span>` : ""}</div>
-      </div>
-      <span class="priority-tag priority-${item.priority}">Priorité ${labels[item.priority]}</span>
-      <div class="wishlist-actions">
-        <button class="btn btn-secondary btn-move">J'ai acheté ce set</button>
-        <button class="btn btn-outline btn-remove">Retirer</button>
-      </div>
-    </div>`).join("");
-
-  el.querySelectorAll(".wishlist-row").forEach((row) => {
-    const id = row.dataset.id;
-    const item = allWishlist.find((i) => i.id === id);
-    row.querySelector(".btn-remove").addEventListener("click", async () => {
-      const { error } = await sb.from("wishlist").delete().eq("id", id);
-      if (!error) { allWishlist = allWishlist.filter((i) => i.id !== id); renderWishlist(); }
-    });
-    row.querySelector(".btn-move").addEventListener("click", async () => {
-      const { error: insertError } = await sb.from("owned_sets").insert({
-        set_num: item.set_num, name: item.name, year: item.year, theme_name: item.theme_name,
-        num_parts: item.num_parts, img_url: item.img_url, quantity: 1, condition: "neuf",
-        price_paid: item.estimated_price,
-      });
-      if (!insertError) {
-        await sb.from("wishlist").delete().eq("id", id);
-        allWishlist = allWishlist.filter((i) => i.id !== id);
-        renderWishlist();
-      }
-    });
-  });
-}
-
-document.getElementById("wishlist-search-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const q = document.getElementById("wishlist-search-input").value.trim();
-  if (q.length < 2) return;
-  const data = await searchSets(q);
-  const results = data.results || [];
-  const el = document.getElementById("wishlist-results");
-  el.innerHTML = results.map((set, i) => `
-    <button type="button" class="result-item" data-index="${i}">
-      ${set.set_img_url ? `<img src="${escapeHtml(set.set_img_url)}" alt="">` : ""}
-      <span><span class="rname">${escapeHtml(set.name)}</span><br><span class="rnum">${escapeHtml(set.set_num)}</span></span>
-    </button>`).join("");
-  el.querySelectorAll(".result-item").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const set = results[Number(btn.dataset.index)];
-      const priority = Number(document.getElementById("wishlist-priority").value);
-      const priceVal = document.getElementById("wishlist-price").value;
-      const { data: inserted, error } = await sb.from("wishlist").insert({
-        set_num: set.set_num, name: set.name, year: set.year, theme_name: set.theme_name || null,
-        num_parts: set.num_parts, img_url: set.set_img_url,
-        estimated_price: priceVal === "" ? null : Number(priceVal), priority,
-      }).select().single();
-      if (!error) {
-        allWishlist = [inserted, ...allWishlist];
-        renderWishlist();
-        el.innerHTML = "";
-        document.getElementById("wishlist-search-input").value = "";
-        document.getElementById("wishlist-price").value = "";
-      }
-    });
-  });
-});
-
-/* ============================================================
-   10) DÉMARRAGE
-   ============================================================ */
-loadDashboard();
-</script>
-</body>
-</html>
