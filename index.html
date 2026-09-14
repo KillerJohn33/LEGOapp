@@ -100,9 +100,13 @@
   .view[hidden]{ display:none; }
   .page-header{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
   .page-header h2{ font-size:28px; }
-  .muted{ color:var(--muted); }
-  .error-text{ color:var(--brick-dark); font-size:14px; }
-  .success-text{ color:var(--ink); font-size:14px; font-weight:600; }
+  .muted{ color:rgba(255,255,255,.88); text-shadow:0 1px 3px rgba(0,0,0,.35); }
+  .error-text{ color:#fff; font-weight:600; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .success-text{ color:#fff; font-size:14px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+  /* À l'intérieur des cartes/panneaux blancs, on repasse sur des teintes sombres classiques */
+  .card .muted, .panel .muted, .list-simple .muted{ color:var(--muted); text-shadow:none; }
+  .panel .error-text{ color:var(--brick-dark); text-shadow:none; }
+  .panel .success-text{ color:var(--ink); text-shadow:none; }
 
   /* Buttons */
   .btn{
@@ -187,8 +191,9 @@
 
   /* Empty state */
   .empty-state{
-    border:2px dashed var(--border); border-radius:var(--radius-lg); padding:40px 20px;
+    border:2px dashed rgba(255,255,255,.55); border-radius:var(--radius-lg); padding:40px 20px;
     text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;
+    background:var(--surface); -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
   }
   .empty-state h3{ font-size:20px; }
   .empty-state p{ max-width:360px; color:var(--muted); margin:0; }
