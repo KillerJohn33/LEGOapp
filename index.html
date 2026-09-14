@@ -188,6 +188,11 @@
   .card-actions{ margin-top:auto; padding-top:10px; display:flex; gap:8px; }
   .card-actions .btn{ padding:7px 14px; font-size:13px; }
   .edit-form{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  .bricklink-link{
+    display:inline-flex; align-items:center; gap:4px; margin-top:8px;
+    font-size:12px; font-weight:600; color:var(--blue,#0055BF); text-decoration:none;
+  }
+  .bricklink-link:hover{ text-decoration:underline; }
 
   /* Empty state */
   .empty-state{
@@ -240,6 +245,26 @@
   .list-simple li{ display:flex; justify-content:space-between; padding:12px 16px; }
   .list-simple li + li{ border-top:1px solid var(--border); }
 
+  /* Stats : tableau détaillé par set */
+  .stats-table{ display:flex; flex-direction:column; min-width:720px; }
+  .stats-row{
+    display:grid; grid-template-columns:2fr 1fr 0.8fr 1fr 1fr 1fr auto;
+    gap:10px; padding:10px 14px; align-items:center; font-size:13px;
+  }
+  .stats-row + .stats-row{ border-top:1px solid var(--border); }
+  .stats-row.stats-head{ font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.02em; color:var(--muted); }
+  .stats-set{ display:flex; align-items:center; gap:8px; }
+  .stats-set img{ width:32px; height:32px; object-fit:contain; background:rgba(255,255,255,.5); border-radius:6px; padding:2px; }
+  .delta-pos{ color:#1D7A45; font-weight:700; }
+  .delta-neg{ color:var(--brick-dark); font-weight:700; }
+
+  /* Stats : répartition par thème */
+  .theme-bar-row{ margin-bottom:12px; }
+  .theme-bar-row:last-child{ margin-bottom:0; }
+  .theme-label{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
+  .theme-bar-track{ background:rgba(13,13,13,.08); border-radius:999px; height:10px; overflow:hidden; }
+  .theme-bar-fill{ height:100%; border-radius:999px; background:linear-gradient(90deg, var(--stud), var(--brick)); }
+
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
 </head>
@@ -258,6 +283,7 @@
     <nav class="nav">
       <button class="nav-btn active" data-view="dashboard">Tableau de bord</button>
       <button class="nav-btn" data-view="collection">Ma collection</button>
+      <button class="nav-btn" data-view="stats">Stats</button>
       <button class="nav-btn" data-view="minifigs">Minifigs</button>
       <button class="nav-btn" data-view="wishlist">Liste de souhaits</button>
       <button class="nav-btn" data-view="options">Options</button>
@@ -292,6 +318,17 @@
         <select id="collection-theme-filter"></select>
       </div>
       <div id="collection-content"><p class="muted">Chargement...</p></div>
+    </section>
+
+    <!-- ===================== STATS ===================== -->
+    <section class="view" id="view-stats" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Stats</h2>
+          <p class="muted">Toutes les statistiques de ta collection LEGO.</p>
+        </div>
+      </div>
+      <div id="stats-content"><p class="muted">Chargement...</p></div>
     </section>
 
     <!-- ===================== ADD SET ===================== -->
@@ -456,6 +493,10 @@ const searchSets = (q) => rbFetch(`/sets/?search=${encodeURIComponent(q)}&page_s
 const getSetMinifigs = (setNum) => rbFetch(`/sets/${encodeURIComponent(setNum)}/minifigs/?page_size=100`);
 const searchMinifigsApi = (q) => rbFetch(`/minifigs/?search=${encodeURIComponent(q)}&page_size=20`);
 
+function brickLinkUrl(setNum) {
+  return `https://www.bricklink.com/v2/catalog/catalogitem.page?S=${encodeURIComponent(setNum)}#T=P`;
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return "";
   return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -563,7 +604,7 @@ document.getElementById("opt-save").addEventListener("click", async () => {
 /* ============================================================
    4) NAVIGATION
    ============================================================ */
-const views = ["dashboard", "collection", "add", "minifigs", "wishlist", "options"];
+const views = ["dashboard", "collection", "stats", "add", "minifigs", "wishlist", "options"];
 function showView(name) {
   views.forEach((v) => {
     document.getElementById(`view-${v}`).hidden = v !== name;
@@ -573,6 +614,7 @@ function showView(name) {
   });
   if (name === "dashboard") loadDashboard();
   if (name === "collection") loadCollection();
+  if (name === "stats") loadStats();
   if (name === "minifigs") loadMinifigs();
   if (name === "wishlist") loadWishlist();
   if (name === "options") renderOptionsView();
@@ -695,14 +737,15 @@ function setCardHtml(item) {
         <div class="detail-row">
           <span>Qté : <strong>${item.quantity}</strong></span>
           <span>État : <strong>${escapeHtml(item.condition)}</strong></span>
-          ${item.price_paid != null ? `<span>Payé : <strong>${eur(item.price_paid)}</strong></span>` : ""}
-          ${item.current_value != null ? `<span>Valeur : <strong>${eur(item.current_value)}</strong></span>` : ""}
+          ${item.price_paid != null ? `<span>Valeur d'achat : <strong>${eur(item.price_paid)}</strong></span>` : ""}
+          ${item.current_value != null ? `<span>Valeur estimée : <strong>${eur(item.current_value)}</strong></span>` : ""}
         </div>
         ${item.notes ? `<p class="muted" style="font-style:italic;font-size:13px;">${escapeHtml(item.notes)}</p>` : ""}
         <div class="card-actions">
           <button class="btn btn-outline btn-edit">Modifier</button>
           <button class="btn btn-danger-outline btn-delete">Retirer</button>
         </div>
+        <a class="bricklink-link" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
       </div>
       <div class="edit-mode" hidden>
         <div class="edit-form">
@@ -713,8 +756,8 @@ function setCardHtml(item) {
               <option value="occasion" ${item.condition === "occasion" ? "selected" : ""}>Occasion</option>
             </select>
           </label>
-          <label class="field">Prix payé (€)<input type="number" step="0.01" class="f-price" value="${item.price_paid ?? ""}"></label>
-          <label class="field">Valeur actuelle (€)<input type="number" step="0.01" class="f-value" value="${item.current_value ?? ""}"></label>
+          <label class="field">Valeur d'achat (€)<input type="number" step="0.01" class="f-price" value="${item.price_paid ?? ""}"></label>
+          <label class="field">Valeur estimée (€)<input type="number" step="0.01" class="f-value" value="${item.current_value ?? ""}"></label>
           <label class="field">Notes<textarea class="f-notes" rows="2">${escapeHtml(item.notes ?? "")}</textarea></label>
           <div class="card-actions">
             <button class="btn btn-secondary btn-save">Enregistrer</button>
@@ -762,6 +805,109 @@ function attachCollectionEvents() {
 
 document.getElementById("collection-search").addEventListener("input", renderCollection);
 document.getElementById("collection-theme-filter").addEventListener("change", renderCollection);
+
+/* ============================================================
+   6bis) STATS
+   ============================================================ */
+async function loadStats() {
+  const el = document.getElementById("stats-content");
+  el.innerHTML = `<p class="muted">Chargement...</p>`;
+
+  const [setsRes, minifigsRes] = await Promise.all([
+    sb.from("owned_sets").select("*").order("name", { ascending: true }),
+    sb.from("minifigs").select("id", { count: "exact", head: true }),
+  ]);
+
+  if (setsRes.error) {
+    el.innerHTML = `<p class="error-text">${escapeHtml(setsRes.error.message)}</p>`;
+    return;
+  }
+
+  const sets = setsRes.data || [];
+  const minifigCount = minifigsRes.count || 0;
+
+  if (sets.length === 0) {
+    el.innerHTML = `<div class="empty-state"><h3>Pas encore de statistiques</h3><p>Ajoute des sets à ta collection pour voir apparaître tes statistiques ici.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`;
+    el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
+    return;
+  }
+
+  const totalSets = sets.reduce((s, x) => s + (x.quantity || 0), 0);
+  const totalPieces = sets.reduce((s, x) => s + (x.num_parts || 0) * (x.quantity || 0), 0);
+  const totalPurchase = sets.reduce((s, x) => s + (Number(x.price_paid) || 0) * (x.quantity || 0), 0);
+  const totalEstimated = sets.reduce((s, x) => s + (Number(x.current_value ?? x.price_paid) || 0) * (x.quantity || 0), 0);
+  const delta = totalEstimated - totalPurchase;
+  const deltaPct = totalPurchase > 0 ? (delta / totalPurchase) * 100 : null;
+  const deltaClassTotal = delta > 0 ? "delta-pos" : delta < 0 ? "delta-neg" : "";
+
+  const themeMap = {};
+  sets.forEach((s) => {
+    const key = s.theme_name || "Sans thème";
+    themeMap[key] = (themeMap[key] || 0) + (s.num_parts || 0) * (s.quantity || 0);
+  });
+  const themeEntries = Object.entries(themeMap).sort((a, b) => b[1] - a[1]);
+  const maxThemePieces = themeEntries.length ? themeEntries[0][1] : 1;
+
+  const rowsHtml = sets.map((s) => {
+    const purchase = s.price_paid != null ? Number(s.price_paid) : null;
+    const estimated = s.current_value != null ? Number(s.current_value) : purchase;
+    const rowDelta = purchase != null && estimated != null ? estimated - purchase : null;
+    const deltaClass = rowDelta > 0 ? "delta-pos" : rowDelta < 0 ? "delta-neg" : "";
+    const deltaLabel = rowDelta == null ? "—" : `${rowDelta >= 0 ? "+" : ""}${rowDelta.toFixed(2)} €`;
+    return `
+    <div class="stats-row">
+      <span class="stats-set">
+        ${s.img_url ? `<img src="${escapeHtml(s.img_url)}" alt="">` : ""}
+        <span><strong>${escapeHtml(s.name)}</strong><br><span class="muted" style="font-size:11px;">${escapeHtml(s.set_num)}</span></span>
+      </span>
+      <span>${escapeHtml(s.theme_name || "—")}</span>
+      <span>${((s.num_parts || 0) * (s.quantity || 0)).toLocaleString("fr-FR")}</span>
+      <span>${purchase != null ? eur(purchase) : "—"}</span>
+      <span>${s.current_value != null ? eur(s.current_value) : "—"}</span>
+      <span class="${deltaClass}">${deltaLabel}</span>
+      <a class="bricklink-link" href="${brickLinkUrl(s.set_num)}" target="_blank" rel="noopener noreferrer">BrickLink ↗</a>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="brick-stat brick-yellow"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Sets possédés</span><span class="value">${totalSets}</span></div>
+      <div class="brick-stat brick-red"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Pièces au total</span><span class="value">${totalPieces.toLocaleString("fr-FR")}</span></div>
+      <div class="brick-stat brick-blue"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Valeur d'achat totale</span><span class="value">${totalPurchase.toFixed(2)} €</span></div>
+      <div class="brick-stat brick-green"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Valeur estimée totale</span><span class="value">${totalEstimated.toFixed(2)} €</span></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Plus ou moins-value</h3>
+      <p style="font-size:28px;font-family:var(--font-heading);margin:0;" class="${deltaClassTotal}">
+        ${delta >= 0 ? "+" : ""}${delta.toFixed(2)} €${deltaPct != null ? ` <span style="font-size:14px;font-weight:500;">(${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)} %)</span>` : ""}
+      </p>
+      <p class="muted" style="font-size:12px;margin:0;">Écart entre la valeur estimée totale et ce que tu as payé, calculé à partir des champs "Valeur d'achat" / "Valeur estimée" que tu remplis toi-même sur chaque set (aide-toi du lien BrickLink pour les actualiser).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Répartition des pièces par thème</h3>
+      ${themeEntries.map(([theme, pieces]) => `
+        <div class="theme-bar-row">
+          <div class="theme-label"><span>${escapeHtml(theme)}</span><span class="muted">${pieces.toLocaleString("fr-FR")} pièces</span></div>
+          <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (pieces / maxThemePieces) * 100)}%;"></div></div>
+        </div>`).join("")}
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Détail par set</h3>
+      <div style="overflow-x:auto;">
+        <div class="stats-table">
+          <div class="stats-row stats-head">
+            <span>Set</span><span>Thème</span><span>Pièces</span><span>Valeur d'achat</span><span>Valeur estimée</span><span>Écart</span><span></span>
+          </div>
+          ${rowsHtml}
+        </div>
+      </div>
+      <p class="muted" style="font-size:12px;">Minifigs enregistrées séparément : ${minifigCount}.</p>
+    </div>
+  `;
+}
 
 /* ============================================================
    7) AJOUTER UN SET
@@ -830,6 +976,7 @@ function renderAddDetail(loading) {
         <div>
           <h3 style="font-size:18px;">${escapeHtml(set.name)}</h3>
           <p class="muted">${escapeHtml(set.set_num)} · ${set.year || "—"} · ${set.num_parts ?? "?"} pièces</p>
+          <a class="bricklink-link" href="${brickLinkUrl(set.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
         </div>
       </div>
       ${loading ? `<p class="muted">Chargement des minifigs...</p>` : addSetMinifigs.length > 0 ? `<p class="muted">${addSetMinifigs.length} minifig(s) trouvée(s) dans ce set.</p>` : ""}
@@ -838,7 +985,8 @@ function renderAddDetail(loading) {
         <label class="field">État
           <select id="af-condition"><option value="neuf">Neuf</option><option value="occasion">Occasion</option></select>
         </label>
-        <label class="field">Prix payé (€)<input type="number" step="0.01" id="af-price"></label>
+        <label class="field">Valeur d'achat (€)<input type="number" step="0.01" id="af-price"></label>
+        <label class="field">Valeur estimée (€)<input type="number" step="0.01" id="af-value"></label>
         <label class="field">Date d'achat<input type="date" id="af-date"></label>
         <label class="field span-2">Notes<textarea id="af-notes" rows="2"></textarea></label>
         ${addSetMinifigs.length > 0 ? `
@@ -881,6 +1029,7 @@ function renderAddDetail(loading) {
       quantity: Number(document.getElementById("af-quantity").value) || 1,
       condition: document.getElementById("af-condition").value,
       price_paid: document.getElementById("af-price").value === "" ? null : Number(document.getElementById("af-price").value),
+      current_value: document.getElementById("af-value").value === "" ? null : Number(document.getElementById("af-value").value),
       purchase_date: document.getElementById("af-date").value || null,
       notes: document.getElementById("af-notes").value || null,
     }).select().single();
@@ -1012,6 +1161,7 @@ function renderWishlist() {
         <span class="ref">${escapeHtml(item.set_num)}</span>
         <h3 style="font-size:16px;">${escapeHtml(item.name)}</h3>
         <div class="meta-row">${item.year ? `<span>${item.year}</span>` : ""}${item.estimated_price != null ? `<span>${eur(item.estimated_price)} estimé</span>` : ""}</div>
+        <a class="bricklink-link" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
       </div>
       <span class="priority-tag priority-${item.priority}">Priorité ${labels[item.priority]}</span>
       <div class="wishlist-actions">
