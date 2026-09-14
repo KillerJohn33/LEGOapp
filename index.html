@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   /* ============================================================
      1) CONFIGURATION VISUELLE — palette LEGO + verre liquide
@@ -27,6 +28,12 @@
     --ink:#0D0D0D;         /* noir */
     --paper:#FFFFFF;       /* blanc */
 
+    --body-fg:var(--ink);
+    --input-bg:rgba(255,255,255,.65);
+    --page-grad-a:#C22B20;
+    --page-grad-b:var(--brick-dark);
+    --page-radial-opacity:.14;
+
     --radius:14px;
     --radius-lg:24px;
     --blur:22px;
@@ -34,20 +41,36 @@
     --font-body:'IBM Plex Sans', sans-serif;
   }
 
+  /* Thème sombre : on assombrit le fond, le verre et les textes ;
+     les éléments de marque (menu jaune, briques colorées, boutons) restent identiques. */
+  html[data-theme="dark"]{
+    --surface:rgba(28,26,26,.58);
+    --surface-strong:rgba(28,26,26,.8);
+    --glass-border:rgba(255,255,255,.12);
+    --border:rgba(255,255,255,.14);
+    --muted:rgba(230,230,232,.62);
+    --body-fg:#EDEDEF;
+    --input-bg:rgba(255,255,255,.08);
+    --page-grad-a:#4A130F;
+    --page-grad-b:#1B0705;
+    --page-radial-opacity:.05;
+  }
+
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{
     background:
-      radial-gradient(ellipse 900px 500px at 20% -10%, rgba(255,255,255,.14), transparent 60%),
-      linear-gradient(160deg, #C22B20 0%, var(--brick-dark) 100%);
+      radial-gradient(ellipse 900px 500px at 20% -10%, rgba(255,255,255,var(--page-radial-opacity)), transparent 60%),
+      linear-gradient(160deg, var(--page-grad-a) 0%, var(--page-grad-b) 100%);
     background-attachment:fixed;
-    color:var(--ink);
+    color:var(--body-fg);
     font-family:var(--font-body);
     min-height:100vh;
     display:flex;
     flex-direction:column;
     position:relative;
     overflow-x:hidden;
+    transition:background .25s ease;
   }
   h1,h2,h3{ font-family:var(--font-heading); margin:0; }
   a{ color:inherit; }
@@ -105,8 +128,8 @@
   .success-text{ color:#fff; font-size:14px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.4); }
   /* À l'intérieur des cartes/panneaux blancs, on repasse sur des teintes sombres classiques */
   .card .muted, .panel .muted, .list-simple .muted{ color:var(--muted); text-shadow:none; }
-  .panel .error-text{ color:var(--brick-dark); text-shadow:none; }
-  .panel .success-text{ color:var(--ink); text-shadow:none; }
+  .panel .error-text{ color:var(--brick); text-shadow:none; }
+  .panel .success-text{ color:var(--body-fg); text-shadow:none; }
 
   /* Buttons */
   .btn{
@@ -119,11 +142,11 @@
   .btn-secondary{ background:linear-gradient(135deg, var(--stud), var(--stud-dark)); color:var(--ink); border:2px solid var(--ink); box-shadow:0 6px 16px rgba(13,13,13,.22); }
   .btn-secondary:hover{ transform:translateY(-1px); box-shadow:0 10px 22px rgba(13,13,13,.3); }
   .btn-outline{
-    background:rgba(255,255,255,.5); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
-    border-color:var(--glass-border); color:var(--ink);
+    background:var(--input-bg); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    border-color:var(--glass-border); color:var(--body-fg);
   }
-  .btn-outline:hover{ background:rgba(255,255,255,.8); }
-  .btn-danger-outline{ background:rgba(255,255,255,.5); border-color:var(--brick); color:var(--brick-dark); }
+  .btn-outline:hover{ background:var(--surface-strong); }
+  .btn-danger-outline{ background:var(--input-bg); border-color:var(--brick); color:var(--brick); }
   .btn-danger-outline:hover{ background:var(--brick); color:#fff; border-color:var(--brick); }
   .btn:disabled{ opacity:.6; cursor:default; transform:none !important; }
 
@@ -131,7 +154,7 @@
   .field{ display:flex; flex-direction:column; gap:4px; font-size:14px; }
   .field input, .field select, .field textarea{
     border:1px solid var(--border); border-radius:12px; padding:9px 12px;
-    background:rgba(255,255,255,.65); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:var(--ink);
+    background:var(--input-bg); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:var(--body-fg);
   }
   .field input:focus, .field select:focus, .field textarea:focus, button:focus-visible{
     outline:2px solid var(--ink); outline-offset:1px;
@@ -139,7 +162,7 @@
   .search-row{ display:flex; gap:10px; flex-wrap:wrap; }
   .search-row input[type=text], .search-row select{
     flex:1; min-width:180px; border:1px solid var(--border); border-radius:12px; padding:10px 14px;
-    background:rgba(255,255,255,.65); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    background:var(--input-bg); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:var(--body-fg);
   }
 
   /* Stat cards -> briques LEGO colorées */
@@ -221,6 +244,10 @@
     background:var(--surface); -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
     border:1px solid var(--glass-border); box-shadow:0 8px 28px rgba(20,23,27,.10), inset 0 1px 0 rgba(255,255,255,.6);
   }
+  .duplicate-warning{
+    background:rgba(255,213,0,.18); border:2px solid var(--stud-dark); border-radius:var(--radius);
+    padding:14px; font-size:14px;
+  }
   .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .form-grid .span-2{ grid-column:1/-1; }
 
@@ -234,7 +261,7 @@
   .priority-tag{ font-size:12px; color:#fff; padding:4px 10px; border-radius:999px; }
   .priority-1{ background:var(--brick); }
   .priority-2{ background:var(--stud); color:var(--ink); }
-  .priority-3{ background:rgba(20,23,27,.12); color:var(--ink); }
+  .priority-3{ background:rgba(128,128,128,.28); color:var(--body-fg); }
   .wishlist-actions{ display:flex; flex-direction:column; gap:6px; }
 
   .list-simple{
@@ -255,14 +282,14 @@
   .stats-row.stats-head{ font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.02em; color:var(--muted); }
   .stats-set{ display:flex; align-items:center; gap:8px; }
   .stats-set img{ width:32px; height:32px; object-fit:contain; background:rgba(255,255,255,.5); border-radius:6px; padding:2px; }
-  .delta-pos{ color:#1D7A45; font-weight:700; }
-  .delta-neg{ color:var(--brick-dark); font-weight:700; }
+  .delta-pos{ color:#2FA860; font-weight:700; }
+  .delta-neg{ color:var(--brick); font-weight:700; }
 
   /* Stats : répartition par thème */
   .theme-bar-row{ margin-bottom:12px; }
   .theme-bar-row:last-child{ margin-bottom:0; }
   .theme-label{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
-  .theme-bar-track{ background:rgba(13,13,13,.08); border-radius:999px; height:10px; overflow:hidden; }
+  .theme-bar-track{ background:rgba(128,128,128,.22); border-radius:999px; height:10px; overflow:hidden; }
   .theme-bar-fill{ height:100%; border-radius:999px; background:linear-gradient(90deg, var(--stud), var(--brick)); }
 
   #stats-content{ display:flex; flex-direction:column; gap:20px; }
@@ -318,6 +345,15 @@
       <div class="search-row">
         <input type="text" id="collection-search" placeholder="Rechercher par nom ou numéro...">
         <select id="collection-theme-filter"></select>
+        <select id="collection-sort">
+          <option value="recent">Plus récents d'abord</option>
+          <option value="name-asc">Nom (A → Z)</option>
+          <option value="name-desc">Nom (Z → A)</option>
+          <option value="year-desc">Année (récent → ancien)</option>
+          <option value="year-asc">Année (ancien → récent)</option>
+          <option value="parts-desc">Pièces (plus → moins)</option>
+          <option value="value-desc">Valeur estimée (plus → moins)</option>
+        </select>
       </div>
       <div id="collection-content"><p class="muted">Chargement...</p></div>
     </section>
@@ -437,6 +473,24 @@
             <option value="GBP">Livre sterling (£)</option>
           </select>
         </label>
+        <label class="field" style="max-width:260px;">
+          Thème
+          <select id="opt-theme">
+            <option value="light" selected>Clair</option>
+            <option value="dark">Sombre</option>
+            <option value="auto">Automatique (selon le système)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h3 style="font-size:17px;">Export des données</h3>
+        <p class="muted" style="font-size:13px;margin:0;">Télécharge une copie de toute ta collection (sets, minifigs, liste de souhaits) — pratique comme sauvegarde ou pour la retravailler ailleurs.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary" id="opt-export-json">Exporter en JSON</button>
+          <button type="button" class="btn btn-secondary" id="opt-export-excel">Exporter en Excel (.xlsx)</button>
+        </div>
+        <p class="error-text" id="opt-export-error" hidden></p>
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;">
@@ -518,6 +572,7 @@ const appSettings = {
   refreshSeconds: 60,
   includeMinifigsDefault: true,
   currency: "EUR",
+  theme: "light",
 };
 let autoRefreshTimer = null;
 
@@ -534,11 +589,26 @@ function applyAutoRefresh() {
   }
 }
 
+function applyTheme() {
+  let effective = appSettings.theme;
+  if (effective === "auto") {
+    effective = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  }
+  document.documentElement.setAttribute("data-theme", effective);
+}
+
+if (window.matchMedia) {
+  const darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const onSystemThemeChange = () => { if (appSettings.theme === "auto") applyTheme(); };
+  if (darkMediaQuery.addEventListener) darkMediaQuery.addEventListener("change", onSystemThemeChange);
+}
+
 function renderOptionsView() {
   document.getElementById("opt-autorefresh").checked = appSettings.autoRefresh;
   document.getElementById("opt-refresh-interval").value = String(appSettings.refreshSeconds);
   document.getElementById("opt-include-minifigs").checked = appSettings.includeMinifigsDefault;
   document.getElementById("opt-currency").value = appSettings.currency;
+  document.getElementById("opt-theme").value = appSettings.theme;
 }
 
 function withTimeout(promise, ms) {
@@ -559,7 +629,9 @@ async function loadAppSettings() {
       appSettings.refreshSeconds = data.refresh_seconds || 60;
       appSettings.includeMinifigsDefault = data.include_minifigs_default !== false;
       appSettings.currency = data.currency || "EUR";
+      appSettings.theme = data.theme || "light";
       applyAutoRefresh();
+      applyTheme();
     }
   } catch (e) {
     // Table "app_settings" pas encore créée, ou requête trop lente : on reste sur les valeurs par défaut.
@@ -573,6 +645,7 @@ async function saveAppSettings() {
     refresh_seconds: appSettings.refreshSeconds,
     include_minifigs_default: appSettings.includeMinifigsDefault,
     currency: appSettings.currency,
+    theme: appSettings.theme,
     updated_at: new Date().toISOString(),
   };
   const { error } = await sb.from("app_settings").upsert(payload);
@@ -588,7 +661,9 @@ document.getElementById("opt-save").addEventListener("click", async () => {
   appSettings.refreshSeconds = Number(document.getElementById("opt-refresh-interval").value);
   appSettings.includeMinifigsDefault = document.getElementById("opt-include-minifigs").checked;
   appSettings.currency = document.getElementById("opt-currency").value;
+  appSettings.theme = document.getElementById("opt-theme").value;
   applyAutoRefresh();
+  applyTheme();
 
   saveBtn.disabled = true; saveBtn.textContent = "Enregistrement...";
   const error = await saveAppSettings();
@@ -601,6 +676,81 @@ document.getElementById("opt-save").addEventListener("click", async () => {
   }
   savedEl.hidden = false;
   setTimeout(() => { savedEl.hidden = true; }, 2500);
+});
+
+/* ============================================================
+   3ter) EXPORT DES DONNÉES (JSON / Excel)
+   ============================================================ */
+async function fetchAllDataForExport() {
+  const [setsRes, minifigsRes, wishlistRes] = await Promise.all([
+    sb.from("owned_sets").select("*").order("created_at", { ascending: false }),
+    sb.from("minifigs").select("*").order("created_at", { ascending: false }),
+    sb.from("wishlist").select("*").order("created_at", { ascending: false }),
+  ]);
+  if (setsRes.error) throw setsRes.error;
+  if (minifigsRes.error) throw minifigsRes.error;
+  if (wishlistRes.error) throw wishlistRes.error;
+  return {
+    sets: setsRes.data || [],
+    minifigs: minifigsRes.data || [],
+    wishlist: wishlistRes.data || [],
+  };
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+document.getElementById("opt-export-json").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  const errorEl = document.getElementById("opt-export-error");
+  errorEl.hidden = true;
+  btn.disabled = true; const originalText = btn.textContent; btn.textContent = "Export en cours...";
+  try {
+    const data = await fetchAllDataForExport();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    downloadBlob(blob, `briqueotheque-export-${todayStamp()}.json`);
+  } catch (err) {
+    errorEl.textContent = "Export impossible : " + (err.message || err);
+    errorEl.hidden = false;
+  } finally {
+    btn.disabled = false; btn.textContent = originalText;
+  }
+});
+
+document.getElementById("opt-export-excel").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  const errorEl = document.getElementById("opt-export-error");
+  errorEl.hidden = true;
+  if (typeof XLSX === "undefined") {
+    errorEl.textContent = "La librairie Excel (XLSX) n'a pas pu être chargée depuis internet.";
+    errorEl.hidden = false;
+    return;
+  }
+  btn.disabled = true; const originalText = btn.textContent; btn.textContent = "Export en cours...";
+  try {
+    const data = await fetchAllDataForExport();
+    const wb = XLSX.utils.book_new();
+    const sheetOrEmpty = (rows) => XLSX.utils.json_to_sheet(rows.length ? rows : [{}]);
+    XLSX.utils.book_append_sheet(wb, sheetOrEmpty(data.sets), "Sets");
+    XLSX.utils.book_append_sheet(wb, sheetOrEmpty(data.minifigs), "Minifigs");
+    XLSX.utils.book_append_sheet(wb, sheetOrEmpty(data.wishlist), "Wishlist");
+    XLSX.writeFile(wb, `briqueotheque-export-${todayStamp()}.xlsx`);
+  } catch (err) {
+    errorEl.textContent = "Export impossible : " + (err.message || err);
+    errorEl.hidden = false;
+  } finally {
+    btn.disabled = false; btn.textContent = originalText;
+  }
 });
 
 /* ============================================================
@@ -706,12 +856,24 @@ function renderCollection() {
   const el = document.getElementById("collection-content");
   const query = document.getElementById("collection-search").value.toLowerCase();
   const theme = document.getElementById("collection-theme-filter").value || "Tous";
+  const sortBy = document.getElementById("collection-sort").value || "recent";
 
   const filtered = allSets.filter((s) => {
     const matchesQuery = !query || s.name.toLowerCase().includes(query) || s.set_num.toLowerCase().includes(query);
     const matchesTheme = theme === "Tous" || s.theme_name === theme;
     return matchesQuery && matchesTheme;
   });
+
+  const sorters = {
+    "recent": (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
+    "name-asc": (a, b) => a.name.localeCompare(b.name),
+    "name-desc": (a, b) => b.name.localeCompare(a.name),
+    "year-desc": (a, b) => (b.year || 0) - (a.year || 0),
+    "year-asc": (a, b) => (a.year || 0) - (b.year || 0),
+    "parts-desc": (a, b) => (b.num_parts || 0) - (a.num_parts || 0),
+    "value-desc": (a, b) => (Number(b.current_value ?? b.price_paid) || 0) - (Number(a.current_value ?? a.price_paid) || 0),
+  };
+  filtered.sort(sorters[sortBy] || sorters.recent);
 
   if (filtered.length === 0) {
     el.innerHTML = `<div class="empty-state"><h3>${allSets.length === 0 ? "Ta collection est vide" : "Aucun résultat"}</h3><p>${allSets.length === 0 ? "Commence par ajouter ton premier set." : "Essaie une autre recherche."}</p>${allSets.length === 0 ? '<button class="btn btn-primary" data-goto="add">Ajouter un set</button>' : ""}</div>`;
@@ -809,6 +971,7 @@ function attachCollectionEvents() {
 
 document.getElementById("collection-search").addEventListener("input", renderCollection);
 document.getElementById("collection-theme-filter").addEventListener("change", renderCollection);
+document.getElementById("collection-sort").addEventListener("change", renderCollection);
 
 /* ============================================================
    6bis) STATS
@@ -1001,6 +1164,7 @@ function renderAddDetail(loading) {
         </label>` : ""}
         <p class="error-text span-2" id="add-set-error" hidden></p>
         <p class="success-text span-2" id="add-set-success" hidden></p>
+        <div class="span-2 duplicate-warning" id="add-set-duplicate" hidden></div>
         <div class="span-2" style="display:flex;gap:8px;">
           <button type="submit" class="btn btn-primary" id="add-set-submit">Ajouter à ma collection</button>
           <button type="button" class="btn btn-outline" id="add-set-cancel">Choisir un autre set</button>
@@ -1014,12 +1178,59 @@ function renderAddDetail(loading) {
     document.getElementById("add-detail").innerHTML = "";
   });
 
+  let duplicateBypass = false;
+
   document.getElementById("add-set-form").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const errorEl = document.getElementById("add-set-error");
+    const successEl = document.getElementById("add-set-success");
+    const dupEl = document.getElementById("add-set-duplicate");
+    errorEl.hidden = true; successEl.hidden = true; dupEl.hidden = true;
+
+    if (!duplicateBypass) {
+      const { data: existing, error: dupError } = await sb.from("owned_sets").select("*").eq("set_num", set.set_num);
+      if (!dupError && existing && existing.length > 0) {
+        const totalQty = existing.reduce((s, r) => s + (r.quantity || 0), 0);
+        dupEl.hidden = false;
+        dupEl.innerHTML = `
+          <p style="margin:0 0 10px;"><strong>Ce set est déjà dans ta collection</strong> (${totalQty} exemplaire${totalQty > 1 ? "s" : ""} enregistré${totalQty > 1 ? "s" : ""}). Que veux-tu faire ?</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary" id="dup-increase">Augmenter la quantité existante</button>
+            <button type="button" class="btn btn-outline" id="dup-separate">Créer une fiche séparée</button>
+          </div>`;
+        document.getElementById("dup-increase").addEventListener("click", async () => {
+          const addQty = Number(document.getElementById("af-quantity").value) || 1;
+          const target = existing[0];
+          const { error } = await sb.from("owned_sets").update({ quantity: (target.quantity || 0) + addQty }).eq("id", target.id);
+          if (error) {
+            errorEl.textContent = error.message; errorEl.hidden = false;
+            return;
+          }
+          successEl.textContent = `Quantité mise à jour (+${addQty}) !`; successEl.hidden = false;
+          dupEl.hidden = true;
+          setTimeout(() => {
+            addSelectedSet = null; addSetMinifigs = [];
+            document.getElementById("add-detail").innerHTML = "";
+            document.getElementById("add-search-input").value = "";
+            showView("collection");
+          }, 900);
+        });
+        document.getElementById("dup-separate").addEventListener("click", () => {
+          duplicateBypass = true;
+          dupEl.hidden = true;
+          document.getElementById("add-set-form").requestSubmit();
+        });
+        return;
+      }
+    }
+
+    await insertNewSetRow();
+  });
+
+  async function insertNewSetRow() {
     const submitBtn = document.getElementById("add-set-submit");
     const errorEl = document.getElementById("add-set-error");
     const successEl = document.getElementById("add-set-success");
-    errorEl.hidden = true; successEl.hidden = true;
     submitBtn.disabled = true; submitBtn.textContent = "Ajout en cours...";
 
     const includeMinifigs = document.getElementById("af-include-minifigs")?.checked ?? false;
@@ -1065,7 +1276,7 @@ function renderAddDetail(loading) {
       document.getElementById("add-search-input").value = "";
       showView("collection");
     }, 900);
-  });
+  }
 }
 
 /* ============================================================
@@ -1233,6 +1444,7 @@ document.getElementById("wishlist-search-form").addEventListener("submit", async
 /* ============================================================
    10) DÉMARRAGE
    ============================================================ */
+applyTheme();
 loadDashboard();
 loadAppSettings();
 </script>
