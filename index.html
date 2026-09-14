@@ -723,11 +723,36 @@ async function rbFetch(path) {
 }
 const searchSets = (q) => rbFetch(`/sets/?search=${encodeURIComponent(q)}&page_size=20&ordering=-year`);
 const getLatestReleasedSets = () => rbFetch(`/sets/?ordering=-year,-set_num&min_parts=1&page_size=8`);
+const getSetsByTheme = (themeId, excludeCount) => rbFetch(`/sets/?theme_id=${themeId}&ordering=-year,-set_num&min_parts=1&page_size=${excludeCount}`);
 const getSetMinifigs = (setNum) => rbFetch(`/sets/${encodeURIComponent(setNum)}/minifigs/?page_size=100`);
 const searchMinifigsApi = (q) => rbFetch(`/minifigs/?search=${encodeURIComponent(q)}&page_size=20`);
 
 function brickLinkUrl(setNum) {
   return `https://www.bricklink.com/v2/catalog/catalogitem.page?S=${encodeURIComponent(setNum)}#T=P`;
+}
+
+/* Résout les thèmes tapés à la main (champ "Thème") vers les thèmes officiels Rebrickable */
+let rbThemesCache = null;
+async function getRebrickableThemes() {
+  if (rbThemesCache) return rbThemesCache;
+  const data = await rbFetch(`/themes/?page_size=1000`);
+  rbThemesCache = data.results || [];
+  return rbThemesCache;
+}
+function normalizeThemeName(s) {
+  return (s || "").trim().toLowerCase();
+}
+async function matchThemeIds(themeNames) {
+  const themes = await getRebrickableThemes();
+  const matched = [];
+  themeNames.forEach((name) => {
+    const norm = normalizeThemeName(name);
+    if (!norm) return;
+    const found = themes.find((t) => normalizeThemeName(t.name) === norm)
+      || themes.find((t) => normalizeThemeName(t.name).includes(norm) || norm.includes(normalizeThemeName(t.name)));
+    if (found && !matched.includes(found.id)) matched.push(found.id);
+  });
+  return matched;
 }
 
 function escapeHtml(str) {
@@ -970,11 +995,10 @@ async function loadDashboard() {
   const el = document.getElementById("dashboard-content");
   el.innerHTML = `<p class="muted">Chargement...</p>`;
 
-  const [setsRes, minifigsRes, wishlistRes, latestSetsResult] = await Promise.all([
+  const [setsRes, minifigsRes, wishlistRes] = await Promise.all([
     sb.from("owned_sets").select("*").order("created_at", { ascending: false }),
     sb.from("minifigs").select("id", { count: "exact", head: true }),
     sb.from("wishlist").select("id", { count: "exact", head: true }),
-    getLatestReleasedSets().catch(() => null),
   ]);
 
   if (setsRes.error) {
@@ -989,11 +1013,41 @@ async function loadDashboard() {
   const totalValue = sets.reduce((s, x) => s + (Number(x.current_value ?? x.price_paid) || 0) * (x.quantity || 0), 0);
   const minifigCount = minifigsRes.count || 0;
   const wishlistCount = wishlistRes.count || 0;
-  const latestSets = (latestSetsResult?.results || [])
-    .filter((s) => (s.num_parts || 0) > 0)
-    .slice(0, 5);
+  const ownedSetNums = new Set(sets.map((s) => s.set_num));
+  const myThemes = Array.from(new Set(sets.map((s) => s.theme_name).filter(Boolean)));
 
-  const newsHtml = latestSets.length === 0
+  // Nouveautés personnalisées : sets récents dans mes thèmes déjà collectionnés.
+  // Repli sur les nouveautés toutes thématiques si aucun thème n'est renseigné
+  // ou ne correspond à un thème officiel Rebrickable.
+  let latestSets = [];
+  let newsSubtitle = "D'après le catalogue Rebrickable, toutes thématiques confondues.";
+  let newsUnavailable = false;
+
+  try {
+    const themeIds = myThemes.length > 0 ? await matchThemeIds(myThemes) : [];
+    if (themeIds.length > 0) {
+      const perTheme = await Promise.all(themeIds.map((id) => getSetsByTheme(id, 8).catch(() => ({ results: [] }))));
+      const merged = perTheme.flatMap((r) => r.results || []);
+      const seen = new Set();
+      latestSets = merged
+        .filter((s) => (s.num_parts || 0) > 0 && !ownedSetNums.has(s.set_num))
+        .filter((s) => (seen.has(s.set_num) ? false : (seen.add(s.set_num), true)))
+        .sort((a, b) => (b.year || 0) - (a.year || 0) || (b.set_num || "").localeCompare(a.set_num || ""))
+        .slice(0, 5);
+      newsSubtitle = `Nouveautés dans tes thèmes : ${myThemes.join(", ")}.`;
+    }
+    if (latestSets.length === 0) {
+      const fallback = await getLatestReleasedSets();
+      latestSets = (fallback.results || []).filter((s) => (s.num_parts || 0) > 0).slice(0, 5);
+      newsSubtitle = myThemes.length > 0
+        ? "Aucune correspondance de thème trouvée : nouveautés toutes thématiques confondues."
+        : "D'après le catalogue Rebrickable, toutes thématiques confondues.";
+    }
+  } catch (e) {
+    newsUnavailable = true;
+  }
+
+  const newsHtml = newsUnavailable || latestSets.length === 0
     ? `<p class="muted">Actualités indisponibles pour le moment (Rebrickable injoignable).</p>`
     : `<ul class="list-simple">${latestSets.map((s) => `
       <li style="align-items:center;gap:12px;">
@@ -1019,8 +1073,8 @@ async function loadDashboard() {
       ? `<div class="empty-state"><h3>Ta collection est vide</h3><p>Commence par ajouter ton premier set LEGO.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`
       : ""
     }
-    <h3 style="font-size:19px;margin-top:10px;">Derniers sets LEGO sortis</h3>
-    <p class="muted" style="font-size:12px;margin-top:2px;">D'après le catalogue Rebrickable, toutes thématiques confondues.</p>
+    <h3 style="font-size:19px;margin-top:10px;">Nouveautés LEGO pour toi</h3>
+    <p class="muted" style="font-size:12px;margin-top:2px;">${escapeHtml(newsSubtitle)}</p>
     ${newsHtml}
   `;
   el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
