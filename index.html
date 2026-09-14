@@ -140,7 +140,20 @@
   .view[hidden]{ display:none; }
   .app[hidden], #auth-screen[hidden]{ display:none; }
   .page-header{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-  .page-header h2{ font-size:28px; }
+  .page-header h2{
+    font-size:28px; color:var(--stud);
+    -webkit-text-stroke:1.5px var(--ink); text-stroke:1.5px var(--ink);
+    text-shadow:-1.5px -1.5px 0 var(--ink), 1.5px -1.5px 0 var(--ink), -1.5px 1.5px 0 var(--ink), 1.5px 1.5px 0 var(--ink), 0 4px 8px rgba(0,0,0,.35);
+  }
+  .section-highlight{
+    display:inline-flex; align-items:center; gap:8px; font-size:21px; color:var(--stud);
+    -webkit-text-stroke:1.2px var(--ink); text-stroke:1.2px var(--ink);
+    text-shadow:-1.2px -1.2px 0 var(--ink), 1.2px -1.2px 0 var(--ink), -1.2px 1.2px 0 var(--ink), 1.2px 1.2px 0 var(--ink), 0 3px 6px rgba(0,0,0,.3);
+  }
+  .section-highlight::after{
+    content:""; display:inline-block; width:34px; height:5px; border-radius:3px;
+    background:var(--brick); border:1px solid var(--ink); margin-left:2px;
+  }
   .muted{ color:rgba(255,255,255,.88); text-shadow:0 1px 3px rgba(0,0,0,.35); }
   .error-text{ color:#fff; font-weight:600; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,.4); }
   .success-text{ color:#fff; font-size:14px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.4); }
@@ -270,6 +283,7 @@
   .form-grid .span-2{ grid-column:1/-1; }
 
   /* Wishlist rows */
+  #wishlist-content{ display:flex; flex-direction:column; gap:16px; }
   .wishlist-row{
     display:flex; align-items:center; gap:14px; border-radius:var(--radius); padding:14px; flex-wrap:wrap;
     background:var(--surface); -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
@@ -1069,7 +1083,7 @@ async function loadDashboard() {
       ? `<div class="empty-state"><h3>Ta collection est vide</h3><p>Commence par ajouter ton premier set LEGO.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`
       : ""
     }
-    <h3 style="font-size:19px;margin-top:10px;">Nouveautés LEGO pour toi</h3>
+    <h3 class="section-highlight" style="margin-top:14px;">Nouveautés LEGO pour toi</h3>
     ${newsHtml}
   `;
   el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
