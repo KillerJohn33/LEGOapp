@@ -84,6 +84,20 @@
   .app{ display:flex; flex:1; flex-direction:column; gap:16px; padding:16px; }
   @media (min-width:800px){ .app{ flex-direction:row; padding:24px; gap:24px; } }
 
+  /* Écran de connexion / inscription */
+  #auth-screen{ flex:1; display:flex; align-items:center; justify-content:center; padding:24px; min-height:100vh; }
+  .auth-card{
+    width:100%; max-width:380px; padding:28px 26px; border-radius:var(--radius-lg);
+    background:var(--surface); -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
+    border:1px solid var(--glass-border); box-shadow:0 16px 40px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.5);
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .auth-tabs{ display:flex; gap:6px; background:rgba(128,128,128,.16); border-radius:999px; padding:4px; }
+  .auth-tab{ flex:1; border:none; background:none; padding:8px 10px; border-radius:999px; font-size:13px; font-weight:600; color:var(--body-fg); }
+  .auth-tab.active{ background:linear-gradient(135deg, var(--brick), var(--brick-dark)); color:#fff; }
+  .auth-form{ display:flex; flex-direction:column; gap:12px; }
+  .auth-form[hidden]{ display:none; }
+
   /* Verre commun */
   .glass{
     background:var(--surface);
@@ -124,6 +138,7 @@
   main{ flex:1; min-width:0; }
   .view{ display:flex; flex-direction:column; gap:24px; }
   .view[hidden]{ display:none; }
+  .app[hidden], #auth-screen[hidden]{ display:none; }
   .page-header{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
   .page-header h2{ font-size:28px; }
   .muted{ color:rgba(255,255,255,.88); text-shadow:0 1px 3px rgba(0,0,0,.35); }
@@ -304,7 +319,39 @@
 
 <div class="bg-blobs"><span class="b1"></span><span class="b2"></span><span class="b3"></span><span class="b4"></span></div>
 
-<div class="app">
+<!-- ===================== AUTH ===================== -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="brick-logo" style="justify-content:center;display:flex;">
+      <img src="lego-logo.png" alt="Logo LEGO" style="height:52px;">
+    </div>
+    <h1 style="text-align:center;font-size:22px;margin-top:10px;">Ma Briqueothèque</h1>
+    <p class="muted" style="text-align:center;margin-top:-6px;">Connecte-toi pour retrouver ta collection.</p>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-auth-tab="login">Se connecter</button>
+      <button type="button" class="auth-tab" data-auth-tab="signup">Créer un compte</button>
+    </div>
+
+    <form id="auth-login-form" class="auth-form">
+      <label class="field">Email<input type="email" id="login-email" required autocomplete="email"></label>
+      <label class="field">Mot de passe<input type="password" id="login-password" required autocomplete="current-password"></label>
+      <p class="error-text" id="login-error" hidden></p>
+      <button type="submit" class="btn btn-primary" id="login-submit" style="width:100%;justify-content:center;">Se connecter</button>
+    </form>
+
+    <form id="auth-signup-form" class="auth-form" hidden>
+      <label class="field">Email<input type="email" id="signup-email" required autocomplete="email"></label>
+      <label class="field">Mot de passe<input type="password" id="signup-password" required autocomplete="new-password" minlength="6"></label>
+      <label class="field">Confirmer le mot de passe<input type="password" id="signup-password-confirm" required autocomplete="new-password" minlength="6"></label>
+      <p class="error-text" id="signup-error" hidden></p>
+      <p class="success-text" id="signup-success" hidden></p>
+      <button type="submit" class="btn btn-primary" id="signup-submit" style="width:100%;justify-content:center;">Créer mon compte</button>
+    </form>
+  </div>
+</div>
+
+<div class="app" hidden>
   <aside class="sidebar">
     <div class="sidebar-header">
       <h1>Ma Briqueothèque</h1>
@@ -441,6 +488,12 @@
       </div>
 
       <div class="panel">
+        <h3 style="font-size:17px;">Compte</h3>
+        <p style="margin:0;">Connecté en tant que <strong id="opt-account-email">—</strong></p>
+        <div><button type="button" class="btn btn-outline" id="opt-signout">Se déconnecter</button></div>
+      </div>
+
+      <div class="panel">
         <h3 style="font-size:17px;">Actualisation des données</h3>
         <p class="muted" style="font-size:13px;margin:0;">Recharge automatiquement les données affichées (tableau de bord, collection, minifigs, liste de souhaits) pendant que tu es sur la page.</p>
         <label class="field" style="flex-direction:row;align-items:center;gap:10px;">
@@ -537,7 +590,127 @@ if (typeof supabase === "undefined") {
   throw new Error("supabase-js n'est pas chargé (CDN bloqué ou hors-ligne).");
 }
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,   // garde la session dans le navigateur (localStorage)
+    autoRefreshToken: true, // renouvelle le jeton automatiquement, sans redemander le mot de passe
+    detectSessionInUrl: true,
+  },
+});
+
+/* ============================================================
+   2bis) AUTHENTIFICATION (email + mot de passe)
+   ============================================================ */
+let currentUser = null;
+
+function showAuthScreen() {
+  document.getElementById("auth-screen").hidden = false;
+  document.querySelector(".app").hidden = true;
+}
+
+function showApp() {
+  document.getElementById("auth-screen").hidden = true;
+  document.querySelector(".app").hidden = false;
+  applyTheme();
+  showView("dashboard");
+  loadAppSettings();
+}
+
+document.querySelectorAll(".auth-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    const isLogin = tab.dataset.authTab === "login";
+    document.getElementById("auth-login-form").hidden = !isLogin;
+    document.getElementById("auth-signup-form").hidden = isLogin;
+  });
+});
+
+document.getElementById("auth-login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("login-error");
+  const submitBtn = document.getElementById("login-submit");
+  errorEl.hidden = true;
+  submitBtn.disabled = true; submitBtn.textContent = "Connexion...";
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: document.getElementById("login-email").value.trim(),
+    password: document.getElementById("login-password").value,
+  });
+  submitBtn.disabled = false; submitBtn.textContent = "Se connecter";
+  if (error) {
+    errorEl.textContent = error.message === "Invalid login credentials"
+      ? "Email ou mot de passe incorrect."
+      : error.message;
+    errorEl.hidden = false;
+    return;
+  }
+  currentUser = data.user;
+  showApp();
+});
+
+document.getElementById("auth-signup-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("signup-error");
+  const successEl = document.getElementById("signup-success");
+  const submitBtn = document.getElementById("signup-submit");
+  errorEl.hidden = true; successEl.hidden = true;
+
+  const password = document.getElementById("signup-password").value;
+  const confirm = document.getElementById("signup-password-confirm").value;
+  if (password !== confirm) {
+    errorEl.textContent = "Les mots de passe ne correspondent pas.";
+    errorEl.hidden = false;
+    return;
+  }
+
+  submitBtn.disabled = true; submitBtn.textContent = "Création...";
+  const { data, error } = await sb.auth.signUp({
+    email: document.getElementById("signup-email").value.trim(),
+    password,
+  });
+  submitBtn.disabled = false; submitBtn.textContent = "Créer mon compte";
+
+  if (error) {
+    errorEl.textContent = error.message;
+    errorEl.hidden = false;
+    return;
+  }
+
+  if (data.session) {
+    // Confirmation par email désactivée sur ce projet : la session est active immédiatement.
+    currentUser = data.user;
+    showApp();
+    return;
+  }
+
+  successEl.textContent = "Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.";
+  successEl.hidden = false;
+  document.getElementById("auth-signup-form").reset();
+});
+
+async function signOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  showAuthScreen();
+}
+
+sb.auth.onAuthStateChange((_event, session) => {
+  if (session && session.user) {
+    currentUser = session.user;
+  } else {
+    currentUser = null;
+  }
+});
+
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session && session.user) {
+    currentUser = session.user;
+    showApp();
+  } else {
+    showAuthScreen();
+  }
+}
 
 /* ============================================================
    3) HELPERS REBRICKABLE
@@ -607,12 +780,18 @@ if (window.matchMedia) {
 }
 
 function renderOptionsView() {
+  document.getElementById("opt-account-email").textContent = currentUser?.email || "—";
   document.getElementById("opt-autorefresh").checked = appSettings.autoRefresh;
   document.getElementById("opt-refresh-interval").value = String(appSettings.refreshSeconds);
   document.getElementById("opt-include-minifigs").checked = appSettings.includeMinifigsDefault;
   document.getElementById("opt-currency").value = appSettings.currency;
   document.getElementById("opt-theme").value = appSettings.theme;
 }
+
+document.getElementById("opt-signout").addEventListener("click", async () => {
+  if (!confirm("Te déconnecter de ton compte ?")) return;
+  await signOut();
+});
 
 function withTimeout(promise, ms) {
   return Promise.race([
@@ -622,9 +801,10 @@ function withTimeout(promise, ms) {
 }
 
 async function loadAppSettings() {
+  if (!currentUser) return;
   try {
     const { data, error } = await withTimeout(
-      sb.from("app_settings").select("*").eq("id", 1).single(),
+      sb.from("app_settings").select("*").eq("user_id", currentUser.id).single(),
       6000
     );
     if (!error && data) {
@@ -637,13 +817,14 @@ async function loadAppSettings() {
       applyTheme();
     }
   } catch (e) {
-    // Table "app_settings" pas encore créée, ou requête trop lente : on reste sur les valeurs par défaut.
+    // Table "app_settings" pas encore créée/migrée, ou requête trop lente : on reste sur les valeurs par défaut.
   }
 }
 
 async function saveAppSettings() {
+  if (!currentUser) return { message: "Non connecté." };
   const payload = {
-    id: 1,
+    user_id: currentUser.id,
     auto_refresh: appSettings.autoRefresh,
     refresh_seconds: appSettings.refreshSeconds,
     include_minifigs_default: appSettings.includeMinifigsDefault,
@@ -651,7 +832,7 @@ async function saveAppSettings() {
     theme: appSettings.theme,
     updated_at: new Date().toISOString(),
   };
-  const { error } = await sb.from("app_settings").upsert(payload);
+  const { error } = await sb.from("app_settings").upsert(payload, { onConflict: "user_id" });
   return error;
 }
 
@@ -1239,6 +1420,7 @@ function renderAddDetail(loading) {
     const includeMinifigs = document.getElementById("af-include-minifigs")?.checked ?? false;
 
     const { data: inserted, error } = await sb.from("owned_sets").insert({
+      user_id: currentUser.id,
       set_num: set.set_num,
       name: set.name,
       year: set.year,
@@ -1261,6 +1443,7 @@ function renderAddDetail(loading) {
 
     if (includeMinifigs && addSetMinifigs.length > 0) {
       const rows = addSetMinifigs.map((m) => ({
+        user_id: currentUser.id,
         fig_num: m.set_num,
         name: m.set_name,
         img_url: m.set_img_url,
@@ -1340,6 +1523,7 @@ document.getElementById("minifig-search-form").addEventListener("submit", async 
     btn.addEventListener("click", async () => {
       const fig = results[Number(btn.dataset.index)];
       const { data: inserted, error } = await sb.from("minifigs").insert({
+        user_id: currentUser.id,
         fig_num: fig.set_num, name: fig.set_name, img_url: fig.set_img_url, quantity: 1, condition: "neuf",
       }).select().single();
       if (!error) {
@@ -1398,6 +1582,7 @@ function renderWishlist() {
     });
     row.querySelector(".btn-move").addEventListener("click", async () => {
       const { error: insertError } = await sb.from("owned_sets").insert({
+        user_id: currentUser.id,
         set_num: item.set_num, name: item.name, year: item.year, theme_name: item.theme_name,
         num_parts: item.num_parts, img_url: item.img_url, quantity: 1, condition: "neuf",
         price_paid: item.estimated_price,
@@ -1429,6 +1614,7 @@ document.getElementById("wishlist-search-form").addEventListener("submit", async
       const priority = Number(document.getElementById("wishlist-priority").value);
       const priceVal = document.getElementById("wishlist-price").value;
       const { data: inserted, error } = await sb.from("wishlist").insert({
+        user_id: currentUser.id,
         set_num: set.set_num, name: set.name, year: set.year, theme_name: set.theme_name || null,
         num_parts: set.num_parts, img_url: set.set_img_url,
         estimated_price: priceVal === "" ? null : Number(priceVal), priority,
@@ -1448,8 +1634,7 @@ document.getElementById("wishlist-search-form").addEventListener("submit", async
    10) DÉMARRAGE
    ============================================================ */
 applyTheme();
-loadDashboard();
-loadAppSettings();
+initAuth();
 </script>
 </body>
 </html>
