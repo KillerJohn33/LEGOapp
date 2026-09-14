@@ -37,7 +37,11 @@
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{
-    background:var(--bg);
+    background:
+      radial-gradient(ellipse 900px 500px at 25% -5%, rgba(255,255,255,.35), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 110% 30%, rgba(255,255,255,.18), transparent 55%),
+      linear-gradient(160deg, #FF5245 0%, var(--brick) 45%, var(--brick-dark) 100%);
+    background-attachment:fixed;
     color:var(--ink);
     font-family:var(--font-body);
     min-height:100vh;
@@ -52,15 +56,6 @@
   input, select, textarea{ font-family:inherit; font-size:14px; }
   ::selection{ background:var(--stud); color:var(--ink); }
 
-  /* Fond "liquid glass" : nappes de couleur floutées façon briques LEGO */
-  .bg-blobs{ position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
-  .bg-blobs span{ position:absolute; border-radius:50%; filter:blur(70px); opacity:.5; animation:drift 16s ease-in-out infinite alternate; }
-  @keyframes drift{ from{ transform:translate(0,0) scale(1); } to{ transform:translate(30px,-20px) scale(1.08); } }
-  .bg-blobs .b1{ width:440px; height:440px; background:var(--brick); top:-130px; left:-110px; }
-  .bg-blobs .b2{ width:400px; height:400px; background:var(--stud); top:8%; right:-130px; }
-  .bg-blobs .b3{ width:360px; height:360px; background:var(--ink); bottom:-160px; left:22%; opacity:.18; }
-  .bg-blobs .b4{ width:320px; height:320px; background:var(--stud); bottom:2%; right:8%; }
-
   .app{ display:flex; flex:1; flex-direction:column; gap:16px; padding:16px; }
   @media (min-width:800px){ .app{ flex-direction:row; padding:24px; gap:24px; } }
 
@@ -73,31 +68,39 @@
     box-shadow:0 8px 30px rgba(20,23,27,.10), inset 0 1px 0 rgba(255,255,255,.6);
   }
 
+  /* Contour "bande dessinée" : texte blanc cerné de noir */
+  .sidebar h1, .nav button{
+    color:#fff;
+    -webkit-text-stroke:1px #000;
+    text-stroke:1px #000;
+    text-shadow:-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,.25);
+  }
+
   /* Sidebar */
   .sidebar{
-    background:linear-gradient(165deg, rgba(20,23,27,.92), rgba(20,23,27,.82));
-    -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
-    backdrop-filter:blur(var(--blur)) saturate(160%);
-    color:var(--bg); flex-shrink:0; border-radius:var(--radius-lg);
-    border:1px solid rgba(255,255,255,.08);
-    box-shadow:0 12px 34px rgba(20,23,27,.22);
+    background:
+      radial-gradient(ellipse 260px 140px at 20% 0%, rgba(255,255,255,.55), transparent 60%),
+      linear-gradient(165deg, #FFE24D 0%, var(--stud) 55%, var(--stud-dark) 100%);
+    color:var(--ink); flex-shrink:0; border-radius:var(--radius-lg);
+    border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 12px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.6);
   }
   @media (min-width:800px){ .sidebar{ width:230px; align-self:flex-start; position:sticky; top:24px; } }
   .sidebar-header{ padding:22px 20px 18px; }
   .brick-logo{ margin-top:10px; }
   .brick-logo img{ display:block; height:60px; width:auto; border-radius:8px; filter:drop-shadow(0 5px 12px rgba(0,0,0,.4)); }
-  .sidebar h1{ font-size:19px; line-height:1.25; color:#fff; }
+  .sidebar h1{ font-size:19px; line-height:1.25; }
   .nav{ display:flex; gap:4px; padding:8px 12px 16px; overflow-x:auto; }
   @media (min-width:800px){ .nav{ flex-direction:column; padding:6px 14px 18px; } }
   .nav button{
-    background:none; border:none; color:rgba(238,241,247,.75);
+    background:none; border:none;
     text-align:left; padding:10px 14px; border-radius:12px;
-    font-size:14px; font-weight:500; white-space:nowrap; transition:background .15s,color .15s,transform .15s;
+    font-size:14px; font-weight:700; white-space:nowrap; transition:background .15s,transform .15s;
   }
-  .nav button:hover{ background:rgba(255,255,255,.10); color:#fff; }
+  .nav button:hover{ background:rgba(0,0,0,.10); }
   .nav button.active{
-    background:linear-gradient(135deg, var(--brick), #F0442F);
-    color:#fff; box-shadow:0 4px 14px rgba(217,41,28,.45);
+    background:linear-gradient(135deg, var(--brick), var(--brick-dark));
+    box-shadow:0 4px 14px rgba(0,0,0,.35);
   }
 
   /* Main content */
