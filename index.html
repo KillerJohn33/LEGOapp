@@ -85,7 +85,7 @@
   @media (min-width:800px){ .sidebar{ width:230px; align-self:flex-start; position:sticky; top:24px; } }
   .sidebar-header{ padding:22px 20px 18px; }
   .brick-logo{ margin-top:10px; }
-  .brick-logo img{ display:block; height:40px; width:auto; border-radius:6px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+  .brick-logo img{ display:block; height:60px; width:auto; border-radius:8px; filter:drop-shadow(0 5px 12px rgba(0,0,0,.4)); }
   .sidebar h1{ font-size:19px; line-height:1.25; color:#fff; }
   .nav{ display:flex; gap:4px; padding:8px 12px 16px; overflow-x:auto; }
   @media (min-width:800px){ .nav{ flex-direction:column; padding:6px 14px 18px; } }
@@ -144,20 +144,31 @@
     background:rgba(255,255,255,.65); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
   }
 
-  /* Stat cards */
-  .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  /* Stat cards -> briques LEGO colorées */
+  .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:22px 16px; }
   @media (min-width:700px){ .stats-grid{ grid-template-columns:repeat(4,1fr); } }
-  .stat-card{
-    border-radius:var(--radius); padding:18px; border-top:3px solid var(--ink);
-    background:var(--surface); -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
-    border-left:1px solid var(--glass-border); border-right:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border);
-    box-shadow:0 8px 24px rgba(20,23,27,.08), inset 0 1px 0 rgba(255,255,255,.6);
+
+  .brick-stat{
+    position:relative; border-radius:8px; padding:22px 16px 16px; color:#fff;
+    border:2px solid rgba(0,0,0,.18);
+    box-shadow:0 6px 0 rgba(0,0,0,.18), 0 16px 26px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.35);
   }
-  .stat-card.brick{ border-top-color:var(--brick); }
-  .stat-card.plate{ border-top-color:var(--ink); }
-  .stat-card.stud{ border-top-color:var(--stud); }
-  .stat-card .label{ font-size:13px; color:var(--muted); display:block; margin-bottom:4px; }
-  .stat-card .value{ font-family:var(--font-heading); font-size:28px; }
+  .brick-stat .studs{ position:absolute; top:-13px; left:0; right:0; display:flex; justify-content:center; gap:10px; }
+  .brick-stat .stud{
+    width:20px; height:20px; border-radius:50%; border:2px solid rgba(0,0,0,.18);
+    box-shadow:inset 0 -3px 5px rgba(0,0,0,.22), inset 0 2px 3px rgba(255,255,255,.4);
+  }
+  .brick-stat .label{ font-size:13px; opacity:.9; display:block; margin-bottom:4px; }
+  .brick-stat .value{ font-family:var(--font-heading); font-size:28px; }
+
+  .brick-stat.brick-yellow{ background:linear-gradient(160deg,#FFDE45,#FFC700); color:var(--ink); }
+  .brick-stat.brick-yellow .stud{ background:#FFC700; }
+  .brick-stat.brick-red{ background:linear-gradient(160deg,#F13B2F,#C81A15); }
+  .brick-stat.brick-red .stud{ background:#C81A15; }
+  .brick-stat.brick-blue{ background:linear-gradient(160deg,#1E6FD9,#0047AB); }
+  .brick-stat.brick-blue .stud{ background:#0047AB; }
+  .brick-stat.brick-green{ background:linear-gradient(160deg,#2FA860,#1D7A45); }
+  .brick-stat.brick-green .stud{ background:#1D7A45; }
 
   /* Cards grid (sets / minifigs) */
   .cards-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
@@ -250,7 +261,6 @@
       <button class="nav-btn" data-view="collection">Ma collection</button>
       <button class="nav-btn" data-view="minifigs">Minifigs</button>
       <button class="nav-btn" data-view="wishlist">Liste de souhaits</button>
-      <button class="nav-btn" data-view="add">Ajouter un set</button>
     </nav>
   </aside>
 
@@ -263,6 +273,7 @@
           <h2>Tableau de bord</h2>
           <p class="muted">Vue d'ensemble de ta collection LEGO.</p>
         </div>
+        <button class="btn btn-primary" data-goto="add">Ajouter un set</button>
       </div>
       <div id="dashboard-content"><p class="muted">Chargement...</p></div>
     </section>
@@ -440,10 +451,10 @@ async function loadDashboard() {
 
   el.innerHTML = `
     <div class="stats-grid">
-      <div class="stat-card brick"><span class="label">Sets possédés</span><span class="value">${totalSets}</span></div>
-      <div class="stat-card plate"><span class="label">Pièces au total</span><span class="value">${totalPieces.toLocaleString("fr-FR")}</span></div>
-      <div class="stat-card stud"><span class="label">Valeur estimée</span><span class="value">${totalValue.toFixed(2)} €</span></div>
-      <div class="stat-card"><span class="label">Minifigs</span><span class="value">${minifigCount}</span></div>
+      <div class="brick-stat brick-yellow"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Sets possédés</span><span class="value">${totalSets}</span></div>
+      <div class="brick-stat brick-red"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Pièces au total</span><span class="value">${totalPieces.toLocaleString("fr-FR")}</span></div>
+      <div class="brick-stat brick-blue"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Valeur estimée</span><span class="value">${totalValue.toFixed(2)} €</span></div>
+      <div class="brick-stat brick-green"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Minifigs</span><span class="value">${minifigCount}</span></div>
     </div>
     <p class="muted" style="margin-top:-10px;">${totalPaid.toFixed(2)} € dépensés au total · ${wishlistCount} set(s) en liste de souhaits</p>
     <h3 style="font-size:19px;margin-top:6px;">Ajouts récents</h3>
