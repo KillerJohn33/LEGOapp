@@ -722,6 +722,7 @@ async function rbFetch(path) {
   return res.json();
 }
 const searchSets = (q) => rbFetch(`/sets/?search=${encodeURIComponent(q)}&page_size=20&ordering=-year`);
+const getLatestReleasedSets = () => rbFetch(`/sets/?ordering=-year,-set_num&page_size=5`);
 const getSetMinifigs = (setNum) => rbFetch(`/sets/${encodeURIComponent(setNum)}/minifigs/?page_size=100`);
 const searchMinifigsApi = (q) => rbFetch(`/minifigs/?search=${encodeURIComponent(q)}&page_size=20`);
 
@@ -969,10 +970,11 @@ async function loadDashboard() {
   const el = document.getElementById("dashboard-content");
   el.innerHTML = `<p class="muted">Chargement...</p>`;
 
-  const [setsRes, minifigsRes, wishlistRes] = await Promise.all([
+  const [setsRes, minifigsRes, wishlistRes, latestSetsResult] = await Promise.all([
     sb.from("owned_sets").select("*").order("created_at", { ascending: false }),
     sb.from("minifigs").select("id", { count: "exact", head: true }),
     sb.from("wishlist").select("id", { count: "exact", head: true }),
+    getLatestReleasedSets().catch(() => null),
   ]);
 
   if (setsRes.error) {
@@ -987,15 +989,21 @@ async function loadDashboard() {
   const totalValue = sets.reduce((s, x) => s + (Number(x.current_value ?? x.price_paid) || 0) * (x.quantity || 0), 0);
   const minifigCount = minifigsRes.count || 0;
   const wishlistCount = wishlistRes.count || 0;
+  const latestSets = latestSetsResult?.results || [];
 
-  const recent = sets.slice(0, 6).map((s) => `
-    <li>
-      <div>
-        <strong>${escapeHtml(s.name)}</strong><br>
-        <span class="muted">${escapeHtml(s.set_num)} · ${s.year || "—"}</span>
-      </div>
-      <span class="muted">Qté ${s.quantity}</span>
-    </li>`).join("");
+  const newsHtml = latestSets.length === 0
+    ? `<p class="muted">Actualités indisponibles pour le moment (Rebrickable injoignable).</p>`
+    : `<ul class="list-simple">${latestSets.map((s) => `
+      <li style="align-items:center;gap:12px;">
+        <span style="display:flex;align-items:center;gap:10px;min-width:0;">
+          ${s.set_img_url ? `<img src="${escapeHtml(s.set_img_url)}" alt="" style="width:38px;height:38px;object-fit:contain;background:var(--bg);border-radius:6px;flex-shrink:0;">` : ""}
+          <span style="min-width:0;">
+            <strong style="display:block;">${escapeHtml(s.name)}</strong>
+            <span class="muted" style="font-size:12px;">${escapeHtml(s.set_num)} · ${s.year || "—"}${s.theme_name ? ` · ${escapeHtml(s.theme_name)}` : ""}</span>
+          </span>
+        </span>
+        <a class="bricklink-link" style="margin-top:0;" href="https://rebrickable.com/sets/${encodeURIComponent(s.set_num)}/" target="_blank" rel="noopener noreferrer">Voir ↗</a>
+      </li>`).join("")}</ul>`;
 
   el.innerHTML = `
     <div class="stats-grid">
@@ -1005,11 +1013,13 @@ async function loadDashboard() {
       <div class="brick-stat brick-green"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Minifigs</span><span class="value">${minifigCount}</span></div>
     </div>
     <p class="muted" style="margin-top:10px;">${totalPaid.toFixed(2)} € dépensés au total · ${wishlistCount} set(s) en liste de souhaits</p>
-    <h3 style="font-size:19px;margin-top:6px;">Ajouts récents</h3>
     ${sets.length === 0
       ? `<div class="empty-state"><h3>Ta collection est vide</h3><p>Commence par ajouter ton premier set LEGO.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`
-      : `<ul class="list-simple">${recent}</ul>`
+      : ""
     }
+    <h3 style="font-size:19px;margin-top:10px;">Derniers sets LEGO sortis</h3>
+    <p class="muted" style="font-size:12px;margin-top:2px;">D'après le catalogue Rebrickable, toutes thématiques confondues.</p>
+    ${newsHtml}
   `;
   el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
 }
