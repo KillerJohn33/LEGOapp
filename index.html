@@ -97,6 +97,7 @@
   .auth-tab.active{ background:linear-gradient(135deg, var(--brick), var(--brick-dark)); color:#fff; }
   .auth-form{ display:flex; flex-direction:column; gap:12px; }
   .auth-form[hidden]{ display:none; }
+  .auth-tabs[hidden]{ display:none; }
 
   /* Verre commun */
   .glass{
@@ -237,7 +238,7 @@
   .card-body h3{ font-size:16px; line-height:1.25; }
   .meta-row{ display:flex; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--muted); }
   .detail-row{ display:flex; gap:14px; flex-wrap:wrap; font-size:14px; }
-  .card-actions{ margin-top:auto; padding-top:10px; display:flex; gap:8px; }
+  .card-actions{ margin-top:auto; padding-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
   .card-actions .btn{ padding:7px 14px; font-size:13px; }
   .edit-form{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
   .bricklink-link{
@@ -277,6 +278,35 @@
     background:rgba(255,213,0,.18); border:2px solid var(--stud-dark); border-radius:var(--radius);
     padding:14px; font-size:14px;
   }
+  .bulk-bar{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    background:var(--surface-strong); -webkit-backdrop-filter:blur(var(--blur)); backdrop-filter:blur(var(--blur));
+    border:1px solid var(--glass-border); border-radius:var(--radius); padding:12px 16px; font-weight:600;
+  }
+  .card-select{
+    position:absolute; top:10px; left:10px; width:20px; height:20px; z-index:2; cursor:pointer;
+  }
+
+  /* Fenêtre modale : fiche détaillée d'un set */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.55);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+  }
+  .modal-overlay[hidden]{ display:none; }
+  .modal-panel{
+    width:100%; max-width:640px; max-height:88vh; overflow-y:auto;
+    background:var(--surface-strong); -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
+    border:1px solid var(--glass-border); border-radius:var(--radius-lg); padding:26px;
+    box-shadow:0 24px 60px rgba(0,0,0,.4); color:var(--body-fg);
+  }
+  .modal-close{
+    position:sticky; top:0; float:right; background:rgba(128,128,128,.25); border:none; color:var(--body-fg);
+    width:32px; height:32px; border-radius:50%; font-size:18px; line-height:1; cursor:pointer; margin-left:10px;
+  }
+  .modal-fig-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:10px; }
+  .modal-fig-grid .mfig{ text-align:center; font-size:11px; }
+  .modal-fig-grid .mfig img{ width:100%; aspect-ratio:1/1; object-fit:contain; background:rgba(255,255,255,.5); border-radius:8px; padding:4px; }
   .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .form-grid .span-2{ grid-column:1/-1; }
 
@@ -324,6 +354,22 @@
 
   #stats-content{ display:flex; flex-direction:column; gap:20px; }
 
+  /* Toasts (annuler une suppression, etc.) */
+  #toast-container{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center; width:min(92vw,420px);
+  }
+  .toast{
+    display:flex; align-items:center; gap:14px; justify-content:space-between; width:100%;
+    background:rgba(13,13,13,.92); color:#fff; padding:12px 16px; border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35); font-size:14px; animation:toast-in .2s ease;
+  }
+  .toast .toast-action{
+    background:var(--stud); color:var(--ink); border:none; padding:6px 12px; border-radius:999px;
+    font-size:13px; font-weight:700; white-space:nowrap; flex-shrink:0;
+  }
+  @keyframes toast-in{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
 </head>
@@ -350,6 +396,7 @@
       <label class="field">Mot de passe<input type="password" id="login-password" required autocomplete="current-password"></label>
       <p class="error-text" id="login-error" hidden></p>
       <button type="submit" class="btn btn-primary" id="login-submit" style="width:100%;justify-content:center;">Se connecter</button>
+      <button type="button" id="forgot-password-link" class="bricklink-link" style="margin-top:0;align-self:center;">Mot de passe oublié ?</button>
     </form>
 
     <form id="auth-signup-form" class="auth-form" hidden>
@@ -359,6 +406,23 @@
       <p class="error-text" id="signup-error" hidden></p>
       <p class="success-text" id="signup-success" hidden></p>
       <button type="submit" class="btn btn-primary" id="signup-submit" style="width:100%;justify-content:center;">Créer mon compte</button>
+    </form>
+
+    <form id="auth-forgot-form" class="auth-form" hidden>
+      <p class="muted" style="margin:0;">Indique ton email, on t'envoie un lien pour réinitialiser ton mot de passe.</p>
+      <label class="field">Email<input type="email" id="forgot-email" required autocomplete="email"></label>
+      <p class="error-text" id="forgot-error" hidden></p>
+      <p class="success-text" id="forgot-success" hidden></p>
+      <button type="submit" class="btn btn-primary" id="forgot-submit" style="width:100%;justify-content:center;">Envoyer le lien</button>
+      <button type="button" id="forgot-back-link" class="bricklink-link" style="margin-top:0;align-self:center;">Retour à la connexion</button>
+    </form>
+
+    <form id="auth-recovery-form" class="auth-form" hidden>
+      <p class="muted" style="margin:0;">Choisis un nouveau mot de passe pour ton compte.</p>
+      <label class="field">Nouveau mot de passe<input type="password" id="recovery-password" required autocomplete="new-password" minlength="6"></label>
+      <label class="field">Confirmer le mot de passe<input type="password" id="recovery-password-confirm" required autocomplete="new-password" minlength="6"></label>
+      <p class="error-text" id="recovery-error" hidden></p>
+      <button type="submit" class="btn btn-primary" id="recovery-submit" style="width:100%;justify-content:center;">Enregistrer le mot de passe</button>
     </form>
   </div>
 </div>
@@ -416,6 +480,15 @@
           <option value="parts-desc">Pièces (plus → moins)</option>
           <option value="value-desc">Valeur estimée (plus → moins)</option>
         </select>
+      </div>
+      <div class="bulk-bar" id="collection-bulk-bar" hidden>
+        <span id="collection-bulk-count"></span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline" id="bulk-mark-new">Marquer neuf</button>
+          <button type="button" class="btn btn-outline" id="bulk-mark-used">Marquer occasion</button>
+          <button type="button" class="btn btn-danger-outline" id="bulk-delete">Supprimer la sélection</button>
+          <button type="button" class="btn btn-outline" id="bulk-clear">Désélectionner</button>
+        </div>
       </div>
       <div id="collection-content"><p class="muted">Chargement...</p></div>
     </section>
@@ -503,6 +576,27 @@
         <h3 style="font-size:17px;">Compte</h3>
         <p style="margin:0;">Connecté en tant que <strong id="opt-account-email">—</strong></p>
         <div><button type="button" class="btn btn-outline" id="opt-signout">Se déconnecter</button></div>
+
+        <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:16px;">
+          <h3 style="font-size:15px;margin-bottom:10px;">Changer d'email</h3>
+          <form id="account-email-form" class="form-grid">
+            <label class="field span-2">Nouvel email<input type="email" id="account-new-email" required autocomplete="email"></label>
+            <p class="error-text span-2" id="account-email-error" hidden></p>
+            <p class="success-text span-2" id="account-email-success" hidden></p>
+            <div class="span-2"><button type="submit" class="btn btn-secondary" id="account-email-submit">Mettre à jour l'email</button></div>
+          </form>
+        </div>
+
+        <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:16px;">
+          <h3 style="font-size:15px;margin-bottom:10px;">Changer de mot de passe</h3>
+          <form id="account-password-form" class="form-grid">
+            <label class="field">Nouveau mot de passe<input type="password" id="account-new-password" required autocomplete="new-password" minlength="6"></label>
+            <label class="field">Confirmer<input type="password" id="account-new-password-confirm" required autocomplete="new-password" minlength="6"></label>
+            <p class="error-text span-2" id="account-password-error" hidden></p>
+            <p class="success-text span-2" id="account-password-success" hidden></p>
+            <div class="span-2"><button type="submit" class="btn btn-secondary" id="account-password-submit">Changer le mot de passe</button></div>
+          </form>
+        </div>
       </div>
 
       <div class="panel">
@@ -629,14 +723,17 @@ function showApp() {
 }
 
 document.querySelectorAll(".auth-tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    const isLogin = tab.dataset.authTab === "login";
-    document.getElementById("auth-login-form").hidden = !isLogin;
-    document.getElementById("auth-signup-form").hidden = isLogin;
-  });
+  tab.addEventListener("click", () => setAuthMode(tab.dataset.authTab));
 });
+
+function setAuthMode(mode) {
+  document.querySelectorAll(".auth-tab").forEach((t) => t.classList.toggle("active", t.dataset.authTab === mode));
+  document.querySelector(".auth-tabs").hidden = (mode === "forgot" || mode === "recovery");
+  document.getElementById("auth-login-form").hidden = mode !== "login";
+  document.getElementById("auth-signup-form").hidden = mode !== "signup";
+  document.getElementById("auth-forgot-form").hidden = mode !== "forgot";
+  document.getElementById("auth-recovery-form").hidden = mode !== "recovery";
+}
 
 document.getElementById("auth-login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -700,13 +797,82 @@ document.getElementById("auth-signup-form").addEventListener("submit", async (e)
   document.getElementById("auth-signup-form").reset();
 });
 
+/* Mot de passe oublié */
+document.getElementById("forgot-password-link").addEventListener("click", () => {
+  document.getElementById("forgot-email").value = document.getElementById("login-email").value;
+  document.getElementById("forgot-error").hidden = true;
+  document.getElementById("forgot-success").hidden = true;
+  setAuthMode("forgot");
+});
+document.getElementById("forgot-back-link").addEventListener("click", () => setAuthMode("login"));
+
+document.getElementById("auth-forgot-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("forgot-error");
+  const successEl = document.getElementById("forgot-success");
+  const submitBtn = document.getElementById("forgot-submit");
+  errorEl.hidden = true; successEl.hidden = true;
+  submitBtn.disabled = true; submitBtn.textContent = "Envoi...";
+
+  const { error } = await sb.auth.resetPasswordForEmail(
+    document.getElementById("forgot-email").value.trim(),
+    { redirectTo: window.location.href.split("#")[0].split("?")[0] }
+  );
+
+  submitBtn.disabled = false; submitBtn.textContent = "Envoyer le lien";
+  if (error) {
+    errorEl.textContent = error.message;
+    errorEl.hidden = false;
+    return;
+  }
+  successEl.textContent = "Email envoyé ! Vérifie ta boîte de réception (et tes spams) et clique sur le lien reçu.";
+  successEl.hidden = false;
+});
+
+/* Définition du nouveau mot de passe, après clic sur le lien reçu par email */
+document.getElementById("auth-recovery-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("recovery-error");
+  const submitBtn = document.getElementById("recovery-submit");
+  errorEl.hidden = true;
+
+  const password = document.getElementById("recovery-password").value;
+  const confirm = document.getElementById("recovery-password-confirm").value;
+  if (password !== confirm) {
+    errorEl.textContent = "Les mots de passe ne correspondent pas.";
+    errorEl.hidden = false;
+    return;
+  }
+
+  submitBtn.disabled = true; submitBtn.textContent = "Enregistrement...";
+  const { data, error } = await sb.auth.updateUser({ password });
+  submitBtn.disabled = false; submitBtn.textContent = "Enregistrer le mot de passe";
+
+  if (error) {
+    errorEl.textContent = error.message;
+    errorEl.hidden = false;
+    return;
+  }
+  currentUser = data.user;
+  showToast("Mot de passe mis à jour avec succès.", null, null, null, 4000);
+  showApp();
+});
+
 async function signOut() {
   await sb.auth.signOut();
   currentUser = null;
+  setAuthMode("login");
   showAuthScreen();
 }
 
-sb.auth.onAuthStateChange((_event, session) => {
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    // L'utilisateur arrive depuis le lien de réinitialisation reçu par email.
+    currentUser = session?.user || currentUser;
+    showAuthScreen();
+    setAuthMode("recovery");
+    return;
+  }
   if (session && session.user) {
     currentUser = session.user;
   } else {
@@ -779,6 +945,28 @@ function eur(n) {
   return Number(n).toFixed(2) + " " + symbol;
 }
 
+/* Notification avec action "Annuler". onAction se déclenche si on clique sur le
+   bouton avant la fin du délai, sinon onExpire se déclenche automatiquement. */
+function showToast(message, actionLabel, onAction, onExpire, timeoutMs = 5000) {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `<span>${escapeHtml(message)}</span>${actionLabel ? `<button type="button" class="toast-action">${escapeHtml(actionLabel)}</button>` : ""}`;
+  container.appendChild(toast);
+
+  let settled = false;
+  const finish = () => { if (settled) return; settled = true; toast.remove(); };
+  const timer = setTimeout(() => { finish(); if (onExpire) onExpire(); }, timeoutMs);
+
+  if (actionLabel) {
+    toast.querySelector(".toast-action").addEventListener("click", () => {
+      clearTimeout(timer);
+      finish();
+      if (onAction) onAction();
+    });
+  }
+}
+
 /* ============================================================
    3bis) OPTIONS / RÉGLAGES (valables pour la session en cours)
    ============================================================ */
@@ -830,6 +1018,57 @@ function renderOptionsView() {
 document.getElementById("opt-signout").addEventListener("click", async () => {
   if (!confirm("Te déconnecter de ton compte ?")) return;
   await signOut();
+});
+
+document.getElementById("account-email-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("account-email-error");
+  const successEl = document.getElementById("account-email-success");
+  const submitBtn = document.getElementById("account-email-submit");
+  errorEl.hidden = true; successEl.hidden = true;
+
+  const newEmail = document.getElementById("account-new-email").value.trim();
+  submitBtn.disabled = true; submitBtn.textContent = "Mise à jour...";
+  const { error } = await sb.auth.updateUser({ email: newEmail });
+  submitBtn.disabled = false; submitBtn.textContent = "Mettre à jour l'email";
+
+  if (error) {
+    errorEl.textContent = error.message;
+    errorEl.hidden = false;
+    return;
+  }
+  successEl.textContent = "Vérifie ta boîte mail (ancienne et/ou nouvelle adresse) pour confirmer le changement.";
+  successEl.hidden = false;
+  document.getElementById("account-email-form").reset();
+});
+
+document.getElementById("account-password-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("account-password-error");
+  const successEl = document.getElementById("account-password-success");
+  const submitBtn = document.getElementById("account-password-submit");
+  errorEl.hidden = true; successEl.hidden = true;
+
+  const password = document.getElementById("account-new-password").value;
+  const confirm2 = document.getElementById("account-new-password-confirm").value;
+  if (password !== confirm2) {
+    errorEl.textContent = "Les mots de passe ne correspondent pas.";
+    errorEl.hidden = false;
+    return;
+  }
+
+  submitBtn.disabled = true; submitBtn.textContent = "Changement...";
+  const { error } = await sb.auth.updateUser({ password });
+  submitBtn.disabled = false; submitBtn.textContent = "Changer le mot de passe";
+
+  if (error) {
+    errorEl.textContent = error.message;
+    errorEl.hidden = false;
+    return;
+  }
+  successEl.textContent = "Mot de passe changé avec succès.";
+  successEl.hidden = false;
+  document.getElementById("account-password-form").reset();
 });
 
 function withTimeout(promise, ms) {
@@ -1091,6 +1330,7 @@ async function loadDashboard() {
    6) COLLECTION
    ============================================================ */
 let allSets = [];
+let selectedSetIds = new Set();
 
 async function loadCollection() {
   const el = document.getElementById("collection-content");
@@ -1135,6 +1375,7 @@ function renderCollection() {
   if (filtered.length === 0) {
     el.innerHTML = `<div class="empty-state"><h3>${allSets.length === 0 ? "Ta collection est vide" : "Aucun résultat"}</h3><p>${allSets.length === 0 ? "Commence par ajouter ton premier set." : "Essaie une autre recherche."}</p>${allSets.length === 0 ? '<button class="btn btn-primary" data-goto="add">Ajouter un set</button>' : ""}</div>`;
     el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
+    updateBulkBar();
     return;
   }
 
@@ -1145,7 +1386,10 @@ function renderCollection() {
 function setCardHtml(item) {
   return `
   <div class="card" data-id="${item.id}">
-    <div class="card-img">${item.img_url ? `<img src="${escapeHtml(item.img_url)}" alt="${escapeHtml(item.name)}">` : `<span class="muted" style="font-size:13px;">Pas d'image</span>`}</div>
+    <div class="card-img">
+      <input type="checkbox" class="card-select" data-id="${item.id}" ${selectedSetIds.has(item.id) ? "checked" : ""} title="Sélectionner">
+      ${item.img_url ? `<img src="${escapeHtml(item.img_url)}" alt="${escapeHtml(item.name)}">` : `<span class="muted" style="font-size:13px;">Pas d'image</span>`}
+    </div>
     <div class="card-body">
       <span class="ref">${escapeHtml(item.set_num)}</span>
       <h3>${escapeHtml(item.name)}</h3>
@@ -1163,6 +1407,7 @@ function setCardHtml(item) {
         </div>
         ${item.notes ? `<p class="muted" style="font-style:italic;font-size:13px;">${escapeHtml(item.notes)}</p>` : ""}
         <div class="card-actions">
+          <button class="btn btn-outline btn-details">Détails</button>
           <button class="btn btn-outline btn-edit">Modifier</button>
           <button class="btn btn-danger-outline btn-delete">Retirer</button>
         </div>
@@ -1197,16 +1442,32 @@ function attachCollectionEvents() {
     const viewMode = card.querySelector(".view-mode");
     const editMode = card.querySelector(".edit-mode");
 
+    card.querySelector(".card-select").addEventListener("change", (e) => {
+      if (e.target.checked) selectedSetIds.add(id); else selectedSetIds.delete(id);
+      updateBulkBar();
+    });
+    card.querySelector(".btn-details").addEventListener("click", () => {
+      const item = allSets.find((s) => s.id === id);
+      if (item) openSetDetail(item);
+    });
     card.querySelector(".btn-edit").addEventListener("click", () => {
       viewMode.hidden = true; editMode.hidden = false;
     });
     card.querySelector(".btn-cancel").addEventListener("click", () => {
       viewMode.hidden = false; editMode.hidden = true;
     });
-    card.querySelector(".btn-delete").addEventListener("click", async () => {
-      if (!confirm("Retirer ce set de ta collection ?")) return;
-      const { error } = await sb.from("owned_sets").delete().eq("id", id);
-      if (!error) { allSets = allSets.filter((s) => s.id !== id); renderCollection(); }
+    card.querySelector(".btn-delete").addEventListener("click", () => {
+      const removedItem = allSets.find((s) => s.id === id);
+      const removedIndex = allSets.findIndex((s) => s.id === id);
+      allSets = allSets.filter((s) => s.id !== id);
+      selectedSetIds.delete(id);
+      renderCollection();
+      showToast(
+        `« ${removedItem.name} » retiré de ta collection.`,
+        "Annuler",
+        () => { allSets.splice(removedIndex, 0, removedItem); renderCollection(); },
+        async () => { await sb.from("owned_sets").delete().eq("id", id); }
+      );
     });
     card.querySelector(".btn-save").addEventListener("click", async () => {
       const patch = {
@@ -1224,6 +1485,113 @@ function attachCollectionEvents() {
       }
     });
   });
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById("collection-bulk-bar");
+  const count = selectedSetIds.size;
+  bar.hidden = count === 0;
+  if (count > 0) {
+    document.getElementById("collection-bulk-count").textContent = `${count} set(s) sélectionné(s)`;
+  }
+}
+
+document.getElementById("bulk-clear").addEventListener("click", () => {
+  selectedSetIds.clear();
+  renderCollection();
+});
+
+document.getElementById("bulk-delete").addEventListener("click", () => {
+  const ids = Array.from(selectedSetIds);
+  if (ids.length === 0) return;
+  const removedItems = allSets.filter((s) => ids.includes(s.id));
+  const remainingBefore = allSets;
+  allSets = allSets.filter((s) => !ids.includes(s.id));
+  selectedSetIds.clear();
+  renderCollection();
+  showToast(
+    `${removedItems.length} set(s) retiré(s) de ta collection.`,
+    "Annuler",
+    () => { allSets = remainingBefore; renderCollection(); },
+    async () => { await sb.from("owned_sets").delete().in("id", ids); }
+  );
+});
+
+async function bulkSetCondition(condition) {
+  const ids = Array.from(selectedSetIds);
+  if (ids.length === 0) return;
+  const { error } = await sb.from("owned_sets").update({ condition }).in("id", ids);
+  if (!error) {
+    allSets = allSets.map((s) => (ids.includes(s.id) ? { ...s, condition } : s));
+    selectedSetIds.clear();
+    renderCollection();
+  }
+}
+document.getElementById("bulk-mark-new").addEventListener("click", () => bulkSetCondition("neuf"));
+document.getElementById("bulk-mark-used").addEventListener("click", () => bulkSetCondition("occasion"));
+
+/* Fiche détaillée d'un set (fenêtre modale) */
+function closeSetModal() {
+  document.getElementById("set-modal-overlay").hidden = true;
+  document.getElementById("set-modal-panel").innerHTML = "";
+}
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "set-modal-overlay") closeSetModal();
+});
+document.addEventListener("keydown", (e) => {
+  const overlay = document.getElementById("set-modal-overlay");
+  if (e.key === "Escape" && overlay && !overlay.hidden) closeSetModal();
+});
+
+async function openSetDetail(item) {
+  const setModalOverlay = document.getElementById("set-modal-overlay");
+  const setModalPanel = document.getElementById("set-modal-panel");
+  setModalOverlay.hidden = false;
+  setModalPanel.innerHTML = `
+    <button type="button" class="modal-close" id="set-modal-close" aria-label="Fermer">✕</button>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <img src="${escapeHtml(item.img_url || "")}" alt="" style="width:150px;height:150px;object-fit:contain;background:rgba(255,255,255,.5);border-radius:12px;padding:8px;flex-shrink:0;">
+      <div style="flex:1;min-width:200px;">
+        <span class="ref">${escapeHtml(item.set_num)}</span>
+        <h2 style="font-size:22px;color:var(--body-fg);-webkit-text-stroke:0;text-shadow:none;margin:2px 0 6px;">${escapeHtml(item.name)}</h2>
+        <div class="meta-row" style="margin-bottom:10px;">
+          ${item.year ? `<span>${item.year}</span>` : ""}
+          ${item.num_parts != null ? `<span>${item.num_parts.toLocaleString("fr-FR")} pièces</span>` : ""}
+          ${item.theme_name ? `<span>${escapeHtml(item.theme_name)}</span>` : ""}
+        </div>
+        <div class="detail-row">
+          <span>Qté : <strong>${item.quantity}</strong></span>
+          <span>État : <strong>${escapeHtml(item.condition)}</strong></span>
+          ${item.price_paid != null ? `<span>Valeur d'achat : <strong>${eur(item.price_paid)}</strong></span>` : ""}
+          ${item.current_value != null ? `<span>Valeur estimée : <strong>${eur(item.current_value)}</strong></span>` : ""}
+          ${item.purchase_date ? `<span>Acheté le : <strong>${escapeHtml(item.purchase_date)}</strong></span>` : ""}
+        </div>
+        ${item.notes ? `<p class="muted" style="font-style:italic;margin-top:10px;">${escapeHtml(item.notes)}</p>` : ""}
+        <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;">
+          <a class="bricklink-link" style="margin-top:0;" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
+          <a class="bricklink-link" style="margin-top:0;" href="https://rebrickable.com/sets/${encodeURIComponent(item.set_num)}/" target="_blank" rel="noopener noreferrer">Voir sur Rebrickable ↗</a>
+        </div>
+      </div>
+    </div>
+    <h3 style="font-size:16px;margin-top:22px;color:var(--body-fg);-webkit-text-stroke:0;text-shadow:none;">Minifigs incluses</h3>
+    <div id="set-modal-figs" style="margin-top:10px;"><p class="muted">Chargement...</p></div>
+  `;
+  document.getElementById("set-modal-close").addEventListener("click", closeSetModal);
+
+  const figsEl = document.getElementById("set-modal-figs");
+  const { data: figs, error } = await sb.from("minifigs").select("*").eq("owned_set_id", item.id);
+  if (error) {
+    figsEl.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`;
+  } else if (!figs || figs.length === 0) {
+    figsEl.innerHTML = `<p class="muted">Aucune minifig enregistrée pour ce set.</p>`;
+  } else {
+    figsEl.innerHTML = `<div class="modal-fig-grid">${figs.map((f) => `
+      <div class="mfig">
+        <img src="${escapeHtml(f.img_url || "")}" alt="">
+        <span>${escapeHtml(f.name)}</span>
+      </div>`).join("")}</div>`;
+  }
 }
 
 document.getElementById("collection-search").addEventListener("input", renderCollection);
@@ -1293,6 +1661,8 @@ async function loadStats() {
     </div>`;
   }).join("");
 
+  const missingValueSets = sets.filter((s) => s.current_value == null);
+
   el.innerHTML = `
     <div class="stats-grid">
       <div class="brick-stat brick-yellow"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Sets possédés</span><span class="value">${totalSets}</span></div>
@@ -1308,6 +1678,19 @@ async function loadStats() {
       </p>
       <p class="muted" style="font-size:12px;margin:0;">Écart entre la valeur estimée totale et ce que tu as payé, calculé à partir des champs "Valeur d'achat" / "Valeur estimée" que tu remplis toi-même sur chaque set (aide-toi du lien BrickLink pour les actualiser).</p>
     </div>
+
+    ${missingValueSets.length > 0 ? `
+    <div class="panel">
+      <h3 style="font-size:17px;">Valeurs à compléter</h3>
+      <p class="muted" style="font-size:12px;margin:0;">${missingValueSets.length} set(s) sans valeur estimée renseignée — ces sets comptent leur valeur d'achat par défaut dans les totaux ci-dessus.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        ${missingValueSets.map((s) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <span>${escapeHtml(s.name)} <span class="muted" style="font-size:12px;">${escapeHtml(s.set_num)}</span></span>
+            <button type="button" class="btn btn-outline btn-fill-value" data-setnum="${escapeHtml(s.set_num)}" style="padding:6px 12px;font-size:13px;">Compléter</button>
+          </div>`).join("")}
+      </div>
+    </div>` : ""}
 
     <div class="panel">
       <h3 style="font-size:17px;">Répartition des pièces par thème</h3>
@@ -1331,6 +1714,12 @@ async function loadStats() {
       <p class="muted" style="font-size:12px;">Minifigs enregistrées séparément : ${minifigCount}.</p>
     </div>
   `;
+  el.querySelectorAll(".btn-fill-value").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.getElementById("collection-search").value = btn.dataset.setnum;
+      showView("collection");
+    });
+  });
 }
 
 /* ============================================================
@@ -1572,10 +1961,18 @@ function renderMinifigs() {
     </div>`).join("")}</div>`;
 
   el.querySelectorAll(".btn-delete-fig").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const id = btn.closest(".card").dataset.id;
-      const { error } = await sb.from("minifigs").delete().eq("id", id);
-      if (!error) { allMinifigs = allMinifigs.filter((m) => m.id !== id); renderMinifigs(); }
+      const removedItem = allMinifigs.find((m) => m.id === id);
+      const removedIndex = allMinifigs.findIndex((m) => m.id === id);
+      allMinifigs = allMinifigs.filter((m) => m.id !== id);
+      renderMinifigs();
+      showToast(
+        `« ${removedItem.name} » retirée.`,
+        "Annuler",
+        () => { allMinifigs.splice(removedIndex, 0, removedItem); renderMinifigs(); },
+        async () => { await sb.from("minifigs").delete().eq("id", id); }
+      );
     });
   });
 }
@@ -1649,9 +2046,16 @@ function renderWishlist() {
   el.querySelectorAll(".wishlist-row").forEach((row) => {
     const id = row.dataset.id;
     const item = allWishlist.find((i) => i.id === id);
-    row.querySelector(".btn-remove").addEventListener("click", async () => {
-      const { error } = await sb.from("wishlist").delete().eq("id", id);
-      if (!error) { allWishlist = allWishlist.filter((i) => i.id !== id); renderWishlist(); }
+    row.querySelector(".btn-remove").addEventListener("click", () => {
+      const removedIndex = allWishlist.findIndex((i) => i.id === id);
+      allWishlist = allWishlist.filter((i) => i.id !== id);
+      renderWishlist();
+      showToast(
+        `« ${item.name} » retiré de la liste de souhaits.`,
+        "Annuler",
+        () => { allWishlist.splice(removedIndex, 0, item); renderWishlist(); },
+        async () => { await sb.from("wishlist").delete().eq("id", id); }
+      );
     });
     row.querySelector(".btn-move").addEventListener("click", async () => {
       const { error: insertError } = await sb.from("owned_sets").insert({
@@ -1709,5 +2113,11 @@ document.getElementById("wishlist-search-form").addEventListener("submit", async
 applyTheme();
 initAuth();
 </script>
+<div id="toast-container"></div>
+
+<div class="modal-overlay" id="set-modal-overlay" hidden>
+  <div class="modal-panel" id="set-modal-panel"></div>
+</div>
+
 </body>
 </html>
