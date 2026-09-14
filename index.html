@@ -265,6 +265,8 @@
   .theme-bar-track{ background:rgba(13,13,13,.08); border-radius:999px; height:10px; overflow:hidden; }
   .theme-bar-fill{ height:100%; border-radius:999px; background:linear-gradient(90deg, var(--stud), var(--brick)); }
 
+  #stats-content{ display:flex; flex-direction:column; gap:20px; }
+
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
 </head>
@@ -758,6 +760,7 @@ function setCardHtml(item) {
           </label>
           <label class="field">Valeur d'achat (€)<input type="number" step="0.01" class="f-price" value="${item.price_paid ?? ""}"></label>
           <label class="field">Valeur estimée (€)<input type="number" step="0.01" class="f-value" value="${item.current_value ?? ""}"></label>
+          <label class="field">Thème<input type="text" class="f-theme" value="${escapeHtml(item.theme_name ?? "")}"></label>
           <label class="field">Notes<textarea class="f-notes" rows="2">${escapeHtml(item.notes ?? "")}</textarea></label>
           <div class="card-actions">
             <button class="btn btn-secondary btn-save">Enregistrer</button>
@@ -792,6 +795,7 @@ function attachCollectionEvents() {
         condition: card.querySelector(".f-condition").value,
         price_paid: card.querySelector(".f-price").value === "" ? null : Number(card.querySelector(".f-price").value),
         current_value: card.querySelector(".f-value").value === "" ? null : Number(card.querySelector(".f-value").value),
+        theme_name: card.querySelector(".f-theme").value.trim() || null,
         notes: card.querySelector(".f-notes").value || null,
       };
       const { error } = await sb.from("owned_sets").update(patch).eq("id", id);
@@ -987,6 +991,7 @@ function renderAddDetail(loading) {
         </label>
         <label class="field">Valeur d'achat (€)<input type="number" step="0.01" id="af-price"></label>
         <label class="field">Valeur estimée (€)<input type="number" step="0.01" id="af-value"></label>
+        <label class="field">Thème<input type="text" id="af-theme" value="${escapeHtml(set.theme_name || "")}" placeholder="Non fourni par Rebrickable, à remplir toi-même"></label>
         <label class="field">Date d'achat<input type="date" id="af-date"></label>
         <label class="field span-2">Notes<textarea id="af-notes" rows="2"></textarea></label>
         ${addSetMinifigs.length > 0 ? `
@@ -1023,7 +1028,7 @@ function renderAddDetail(loading) {
       set_num: set.set_num,
       name: set.name,
       year: set.year,
-      theme_name: set.theme_name || null,
+      theme_name: document.getElementById("af-theme").value.trim() || null,
       num_parts: set.num_parts,
       img_url: set.set_img_url,
       quantity: Number(document.getElementById("af-quantity").value) || 1,
