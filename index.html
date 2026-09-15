@@ -225,6 +225,27 @@
   .cards-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
   @media (min-width:640px){ .cards-grid{ grid-template-columns:repeat(3,1fr); } }
   @media (min-width:960px){ .cards-grid{ grid-template-columns:repeat(4,1fr); } }
+
+  /* Vue mosaïque : colonnes façon Pinterest, hauteurs variables */
+  .cards-mosaic{ column-count:2; column-gap:16px; }
+  @media (min-width:640px){ .cards-mosaic{ column-count:3; } }
+  @media (min-width:960px){ .cards-mosaic{ column-count:4; } }
+  .cards-mosaic .card{ break-inside:avoid; margin-bottom:16px; width:100%; }
+
+  /* Vue liste : lignes compactes, image à gauche */
+  .cards-list{ display:flex; flex-direction:column; gap:10px; }
+  .cards-list .card{ flex-direction:row; align-items:center; }
+  .cards-list .card-img{ width:84px; height:84px; aspect-ratio:auto; flex-shrink:0; }
+  .cards-list .card-body{ padding:10px 14px; gap:4px; }
+  .cards-list .card-body h3{ font-size:14px; }
+  .cards-list .edit-mode{ width:100%; }
+
+  /* Sélecteur de vue (grille / mosaïque / liste) */
+  .view-switcher{ display:flex; gap:4px; background:rgba(128,128,128,.16); border-radius:999px; padding:4px; }
+  .view-switcher button{
+    background:none; border:none; padding:7px 14px; border-radius:999px; font-size:13px; font-weight:600; color:var(--body-fg);
+  }
+  .view-switcher button.active{ background:linear-gradient(135deg, var(--brick), var(--brick-dark)); color:#fff; }
   .card{
     border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column; transition:transform .18s, box-shadow .18s;
     background:var(--surface); -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
@@ -466,7 +487,14 @@
           <h2>Ma collection</h2>
           <p class="muted" id="collection-count"></p>
         </div>
-        <button class="btn btn-primary" data-goto="add">Ajouter un set</button>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div class="view-switcher" id="collection-view-switcher">
+            <button type="button" data-mode="grid" class="active">Grille</button>
+            <button type="button" data-mode="mosaic">Mosaïque</button>
+            <button type="button" data-mode="list">Liste</button>
+          </div>
+          <button class="btn btn-primary" data-goto="add">Ajouter un set</button>
+        </div>
       </div>
       <div class="search-row">
         <input type="text" id="collection-search" placeholder="Rechercher par nom ou numéro...">
@@ -527,6 +555,11 @@
         <div>
           <h2>Minifigs</h2>
           <p class="muted" id="minifigs-count"></p>
+        </div>
+        <div class="view-switcher" id="minifigs-view-switcher">
+          <button type="button" data-mode="grid" class="active">Grille</button>
+          <button type="button" data-mode="mosaic">Mosaïque</button>
+          <button type="button" data-mode="list">Liste</button>
         </div>
       </div>
       <div class="panel">
@@ -650,6 +683,14 @@
             <option value="light" selected>Clair</option>
             <option value="dark">Sombre</option>
             <option value="auto">Automatique (selon le système)</option>
+          </select>
+        </label>
+        <label class="field" style="max-width:260px;">
+          Affichage par défaut (collection & minifigs)
+          <select id="opt-default-view">
+            <option value="grid" selected>Grille</option>
+            <option value="mosaic">Mosaïque</option>
+            <option value="list">Liste</option>
           </select>
         </label>
       </div>
@@ -989,6 +1030,7 @@ const appSettings = {
   includeMinifigsDefault: true,
   currency: "EUR",
   theme: "light",
+  defaultView: "grid",
 };
 let autoRefreshTimer = null;
 
@@ -1026,6 +1068,7 @@ function renderOptionsView() {
   document.getElementById("opt-include-minifigs").checked = appSettings.includeMinifigsDefault;
   document.getElementById("opt-currency").value = appSettings.currency;
   document.getElementById("opt-theme").value = appSettings.theme;
+  document.getElementById("opt-default-view").value = appSettings.defaultView;
 }
 
 document.getElementById("opt-signout").addEventListener("click", async () => {
@@ -1104,6 +1147,7 @@ async function loadAppSettings() {
       appSettings.includeMinifigsDefault = data.include_minifigs_default !== false;
       appSettings.currency = data.currency || "EUR";
       appSettings.theme = data.theme || "light";
+      appSettings.defaultView = data.default_view || "grid";
       applyAutoRefresh();
       applyTheme();
     }
@@ -1121,6 +1165,7 @@ async function saveAppSettings() {
     include_minifigs_default: appSettings.includeMinifigsDefault,
     currency: appSettings.currency,
     theme: appSettings.theme,
+    default_view: appSettings.defaultView,
     updated_at: new Date().toISOString(),
   };
   const { error } = await sb.from("app_settings").upsert(payload, { onConflict: "user_id" });
@@ -1137,6 +1182,7 @@ document.getElementById("opt-save").addEventListener("click", async () => {
   appSettings.includeMinifigsDefault = document.getElementById("opt-include-minifigs").checked;
   appSettings.currency = document.getElementById("opt-currency").value;
   appSettings.theme = document.getElementById("opt-theme").value;
+  appSettings.defaultView = document.getElementById("opt-default-view").value;
   applyAutoRefresh();
   applyTheme();
 
@@ -1344,10 +1390,13 @@ async function loadDashboard() {
    ============================================================ */
 let allSets = [];
 let selectedSetIds = new Set();
+let collectionViewMode = "grid";
 
 async function loadCollection() {
   const el = document.getElementById("collection-content");
   el.innerHTML = `<p class="muted">Chargement...</p>`;
+  collectionViewMode = appSettings.defaultView || "grid";
+  document.querySelectorAll("#collection-view-switcher button").forEach((b) => b.classList.toggle("active", b.dataset.mode === collectionViewMode));
   const { data, error } = await sb.from("owned_sets").select("*").order("created_at", { ascending: false });
   if (error) { el.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`; return; }
   allSets = data || [];
@@ -1355,6 +1404,14 @@ async function loadCollection() {
   populateThemeFilter();
   renderCollection();
 }
+
+document.querySelectorAll("#collection-view-switcher button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    collectionViewMode = btn.dataset.mode;
+    document.querySelectorAll("#collection-view-switcher button").forEach((b) => b.classList.toggle("active", b === btn));
+    renderCollection();
+  });
+});
 
 function populateThemeFilter() {
   const select = document.getElementById("collection-theme-filter");
@@ -1392,7 +1449,7 @@ function renderCollection() {
     return;
   }
 
-  el.innerHTML = `<div class="cards-grid">${filtered.map(setCardHtml).join("")}</div>`;
+  el.innerHTML = `<div class="cards-${collectionViewMode}">${filtered.map(setCardHtml).join("")}</div>`;
   attachCollectionEvents();
 }
 
@@ -1944,10 +2001,13 @@ function renderAddDetail(loading) {
    8) MINIFIGS
    ============================================================ */
 let allMinifigs = [];
+let minifigsViewMode = "grid";
 
 async function loadMinifigs() {
   const el = document.getElementById("minifigs-content");
   el.innerHTML = `<p class="muted">Chargement...</p>`;
+  minifigsViewMode = appSettings.defaultView || "grid";
+  document.querySelectorAll("#minifigs-view-switcher button").forEach((b) => b.classList.toggle("active", b.dataset.mode === minifigsViewMode));
   const { data, error } = await sb.from("minifigs").select("*").order("created_at", { ascending: false });
   if (error) { el.innerHTML = `<p class="error-text">${escapeHtml(error.message)}</p>`; return; }
   allMinifigs = data || [];
@@ -1955,13 +2015,21 @@ async function loadMinifigs() {
   renderMinifigs();
 }
 
+document.querySelectorAll("#minifigs-view-switcher button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    minifigsViewMode = btn.dataset.mode;
+    document.querySelectorAll("#minifigs-view-switcher button").forEach((b) => b.classList.toggle("active", b === btn));
+    renderMinifigs();
+  });
+});
+
 function renderMinifigs() {
   const el = document.getElementById("minifigs-content");
   if (allMinifigs.length === 0) {
     el.innerHTML = `<div class="empty-state"><h3>Aucune minifig enregistrée</h3><p>Ajoute des minifigs en recherchant ci-dessus, ou en cochant l'option lors de l'ajout d'un set.</p></div>`;
     return;
   }
-  el.innerHTML = `<div class="cards-grid">${allMinifigs.map((m) => `
+  el.innerHTML = `<div class="cards-${minifigsViewMode}">${allMinifigs.map((m) => `
     <div class="card" data-id="${m.id}">
       <div class="card-img">${m.img_url ? `<img src="${escapeHtml(m.img_url)}" alt="${escapeHtml(m.name)}">` : `<span class="muted" style="font-size:13px;">Pas d'image</span>`}</div>
       <div class="card-body">
