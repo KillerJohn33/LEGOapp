@@ -310,6 +310,10 @@
   .card-select{
     position:absolute; top:10px; left:10px; width:20px; height:20px; z-index:2; cursor:pointer;
   }
+  .boxed-badge{
+    position:absolute; top:10px; right:10px; z-index:2; background:rgba(13,13,13,.85); color:#fff;
+    font-size:11px; font-weight:700; padding:4px 8px; border-radius:999px;
+  }
 
   /* Fenêtre modale : fiche détaillée d'un set */
   .modal-overlay{
@@ -1458,6 +1462,7 @@ function setCardHtml(item) {
   <div class="card" data-id="${item.id}">
     <div class="card-img">
       <input type="checkbox" class="card-select" data-id="${item.id}" ${selectedSetIds.has(item.id) ? "checked" : ""} title="Sélectionner">
+      ${item.build_status === "boite" ? `<span class="boxed-badge">📦 En boîte</span>` : ""}
       ${item.img_url ? `<img src="${escapeHtml(item.img_url)}" alt="${escapeHtml(item.name)}">` : `<span class="muted" style="font-size:13px;">Pas d'image</span>`}
     </div>
     <div class="card-body">
@@ -1472,6 +1477,7 @@ function setCardHtml(item) {
         <div class="detail-row card-detail-row">
           <span>Qté : <strong>${item.quantity}</strong></span>
           <span>État : <strong>${escapeHtml(item.condition)}</strong></span>
+          <span>Statut : <strong>${item.build_status === "boite" ? "En boîte" : "Monté / exposé"}</strong></span>
           ${item.price_paid != null ? `<span>Valeur d'achat : <strong>${eur(item.price_paid)}</strong></span>` : ""}
           ${item.current_value != null ? `<span>Valeur estimée : <strong>${eur(item.current_value)}</strong></span>` : ""}
         </div>
@@ -1490,6 +1496,12 @@ function setCardHtml(item) {
             <select class="f-condition">
               <option value="neuf" ${item.condition === "neuf" ? "selected" : ""}>Neuf</option>
               <option value="occasion" ${item.condition === "occasion" ? "selected" : ""}>Occasion</option>
+            </select>
+          </label>
+          <label class="field">Statut
+            <select class="f-build-status">
+              <option value="expose" ${item.build_status !== "boite" ? "selected" : ""}>Monté / exposé</option>
+              <option value="boite" ${item.build_status === "boite" ? "selected" : ""}>Encore en boîte</option>
             </select>
           </label>
           <label class="field">Valeur d'achat (€)<input type="number" step="0.01" class="f-price" value="${item.price_paid ?? ""}"></label>
@@ -1543,6 +1555,7 @@ function attachCollectionEvents() {
       const patch = {
         quantity: Number(card.querySelector(".f-quantity").value) || 1,
         condition: card.querySelector(".f-condition").value,
+        build_status: card.querySelector(".f-build-status").value,
         price_paid: card.querySelector(".f-price").value === "" ? null : Number(card.querySelector(".f-price").value),
         current_value: card.querySelector(".f-value").value === "" ? null : Number(card.querySelector(".f-value").value),
         theme_name: card.querySelector(".f-theme").value.trim() || null,
@@ -1633,6 +1646,7 @@ async function openSetDetail(item) {
         <div class="detail-row">
           <span>Qté : <strong>${item.quantity}</strong></span>
           <span>État : <strong>${escapeHtml(item.condition)}</strong></span>
+          <span>Statut : <strong>${item.build_status === "boite" ? "En boîte" : "Monté / exposé"}</strong></span>
           ${item.price_paid != null ? `<span>Valeur d'achat : <strong>${eur(item.price_paid)}</strong></span>` : ""}
           ${item.current_value != null ? `<span>Valeur estimée : <strong>${eur(item.current_value)}</strong></span>` : ""}
           ${item.purchase_date ? `<span>Acheté le : <strong>${escapeHtml(item.purchase_date)}</strong></span>` : ""}
@@ -1732,6 +1746,8 @@ async function loadStats() {
   }).join("");
 
   const missingValueSets = sets.filter((s) => s.current_value == null);
+  const boxedSets = sets.filter((s) => s.build_status === "boite");
+  const builtCount = totalSets - boxedSets.reduce((s, x) => s + (x.quantity || 0), 0);
 
   el.innerHTML = `
     <div class="stats-grid">
@@ -1747,6 +1763,22 @@ async function loadStats() {
         ${delta >= 0 ? "+" : ""}${delta.toFixed(2)} €${deltaPct != null ? ` <span style="font-size:14px;font-weight:500;">(${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)} %)</span>` : ""}
       </p>
       <p class="muted" style="font-size:12px;margin:0;">Écart entre la valeur estimée totale et ce que tu as payé, calculé à partir des champs "Valeur d'achat" / "Valeur estimée" que tu remplis toi-même sur chaque set (aide-toi du lien BrickLink pour les actualiser).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Sets à construire</h3>
+      <p style="font-size:28px;font-family:var(--font-heading);margin:0;">
+        📦 ${boxedSets.length} <span style="font-size:14px;font-weight:500;">encore en boîte</span>
+      </p>
+      <p class="muted" style="font-size:12px;margin:0 0 8px;">${builtCount} monté(s)/exposé(s) sur ${totalSets} au total.</p>
+      ${boxedSets.length > 0 ? `
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${boxedSets.map((s) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <span>${escapeHtml(s.name)} <span class="muted" style="font-size:12px;">${escapeHtml(s.set_num)}</span></span>
+            <button type="button" class="btn btn-outline btn-fill-value" data-setnum="${escapeHtml(s.set_num)}" style="padding:6px 12px;font-size:13px;">Voir</button>
+          </div>`).join("")}
+      </div>` : `<p class="muted" style="font-size:13px;margin:0;">Tous tes sets sont montés ou exposés 🎉</p>`}
     </div>
 
     ${missingValueSets.length > 0 ? `
@@ -1871,6 +1903,12 @@ function renderAddDetail(loading) {
         <label class="field">Valeur d'achat (€)<input type="number" step="0.01" id="af-price"></label>
         <label class="field">Valeur estimée (€)<input type="number" step="0.01" id="af-value"></label>
         <label class="field">Thème<input type="text" id="af-theme" value="${escapeHtml(set.theme_name || "")}" placeholder="Non fourni par Rebrickable, à remplir toi-même"></label>
+        <label class="field">Statut
+          <select id="af-build-status">
+            <option value="expose">Monté / exposé</option>
+            <option value="boite">Encore en boîte</option>
+          </select>
+        </label>
         <label class="field">Date d'achat<input type="date" id="af-date"></label>
         <label class="field span-2">Notes<textarea id="af-notes" rows="2"></textarea></label>
         ${addSetMinifigs.length > 0 ? `
@@ -1961,6 +1999,7 @@ function renderAddDetail(loading) {
       img_url: set.set_img_url,
       quantity: Number(document.getElementById("af-quantity").value) || 1,
       condition: document.getElementById("af-condition").value,
+      build_status: document.getElementById("af-build-status").value,
       price_paid: document.getElementById("af-price").value === "" ? null : Number(document.getElementById("af-price").value),
       current_value: document.getElementById("af-value").value === "" ? null : Number(document.getElementById("af-value").value),
       purchase_date: document.getElementById("af-date").value || null,
