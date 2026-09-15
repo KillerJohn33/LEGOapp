@@ -252,18 +252,18 @@
     .mobile-bottom-nav{
       display:flex; gap:2px; align-items:center; justify-content:space-between;
       position:fixed; bottom:14px; left:10px; right:10px;
-      z-index:150; padding:8px; border-radius:999px;
+      z-index:150; padding:10px; border-radius:999px;
       background:rgba(255,200,0,.94);
       -webkit-backdrop-filter:blur(18px) saturate(180%); backdrop-filter:blur(18px) saturate(180%);
       border:1px solid rgba(255,255,255,.6);
       box-shadow:0 10px 30px rgba(0,0,0,.35);
     }
     /* Laisse de la place en bas pour que le contenu ne soit pas masqué par la bulle */
-    .app{ padding-bottom:88px; }
+    .app{ padding-bottom:92px; }
   }
   .mobile-nav-btn{
     display:flex; align-items:center; justify-content:center;
-    flex:1; height:44px; border-radius:50%; border:none; background:none;
+    width:48px; height:48px; flex-shrink:0; border-radius:50%; border:none; background:none;
     color:var(--brick); transition:background .15s,transform .15s;
   }
   .mobile-nav-btn svg{ width:22px; height:22px; }
