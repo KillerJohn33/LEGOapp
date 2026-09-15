@@ -225,12 +225,15 @@
   .cards-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
   @media (min-width:640px){ .cards-grid{ grid-template-columns:repeat(3,1fr); } }
   @media (min-width:960px){ .cards-grid{ grid-template-columns:repeat(4,1fr); } }
+  @media (min-width:1300px){ .cards-grid{ grid-template-columns:repeat(5,1fr); } }
 
-  /* Vue mosaïque : colonnes façon Pinterest, hauteurs variables */
-  .cards-mosaic{ column-count:2; column-gap:16px; }
-  @media (min-width:640px){ .cards-mosaic{ column-count:3; } }
-  @media (min-width:960px){ .cards-mosaic{ column-count:4; } }
-  .cards-mosaic .card{ break-inside:avoid; margin-bottom:16px; width:100%; }
+  /* Vue grille : version condensée, l'info complète reste dispo via "Détails" */
+  .cards-grid .card-detail-row, .cards-grid .card-notes, .cards-grid .bricklink-link, .cards-grid .card-theme{ display:none; }
+  .cards-grid .card-body{ padding:10px 12px; gap:4px; }
+  .cards-grid .card-body h3{ font-size:14px; }
+  .cards-grid .meta-row{ font-size:12px; }
+  .cards-grid .card-actions{ padding-top:6px; }
+  .cards-grid .card-actions .btn{ padding:5px 10px; font-size:12px; }
 
   /* Vue liste : lignes compactes, image à gauche */
   .cards-list{ display:flex; flex-direction:column; gap:10px; }
@@ -490,7 +493,6 @@
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
           <div class="view-switcher" id="collection-view-switcher">
             <button type="button" data-mode="grid" class="active">Grille</button>
-            <button type="button" data-mode="mosaic">Mosaïque</button>
             <button type="button" data-mode="list">Liste</button>
           </div>
           <button class="btn btn-primary" data-goto="add">Ajouter un set</button>
@@ -558,7 +560,6 @@
         </div>
         <div class="view-switcher" id="minifigs-view-switcher">
           <button type="button" data-mode="grid" class="active">Grille</button>
-          <button type="button" data-mode="mosaic">Mosaïque</button>
           <button type="button" data-mode="list">Liste</button>
         </div>
       </div>
@@ -689,7 +690,6 @@
           Affichage par défaut (collection & minifigs)
           <select id="opt-default-view">
             <option value="grid" selected>Grille</option>
-            <option value="mosaic">Mosaïque</option>
             <option value="list">Liste</option>
           </select>
         </label>
@@ -1147,7 +1147,7 @@ async function loadAppSettings() {
       appSettings.includeMinifigsDefault = data.include_minifigs_default !== false;
       appSettings.currency = data.currency || "EUR";
       appSettings.theme = data.theme || "light";
-      appSettings.defaultView = data.default_view || "grid";
+      appSettings.defaultView = ["grid", "list"].includes(data.default_view) ? data.default_view : "grid";
       applyAutoRefresh();
       applyTheme();
     }
@@ -1466,16 +1466,16 @@ function setCardHtml(item) {
       <div class="meta-row">
         ${item.year ? `<span>${item.year}</span>` : ""}
         ${item.num_parts != null ? `<span>${item.num_parts} pièces</span>` : ""}
-        ${item.theme_name ? `<span>${escapeHtml(item.theme_name)}</span>` : ""}
+        ${item.theme_name ? `<span class="card-theme">${escapeHtml(item.theme_name)}</span>` : ""}
       </div>
       <div class="view-mode">
-        <div class="detail-row">
+        <div class="detail-row card-detail-row">
           <span>Qté : <strong>${item.quantity}</strong></span>
           <span>État : <strong>${escapeHtml(item.condition)}</strong></span>
           ${item.price_paid != null ? `<span>Valeur d'achat : <strong>${eur(item.price_paid)}</strong></span>` : ""}
           ${item.current_value != null ? `<span>Valeur estimée : <strong>${eur(item.current_value)}</strong></span>` : ""}
         </div>
-        ${item.notes ? `<p class="muted" style="font-style:italic;font-size:13px;">${escapeHtml(item.notes)}</p>` : ""}
+        ${item.notes ? `<p class="muted card-notes" style="font-style:italic;font-size:13px;">${escapeHtml(item.notes)}</p>` : ""}
         <div class="card-actions">
           <button class="btn btn-outline btn-details">Détails</button>
           <button class="btn btn-outline btn-edit">Modifier</button>
@@ -2036,7 +2036,7 @@ function renderMinifigs() {
         ${m.fig_num ? `<span class="ref">${escapeHtml(m.fig_num)}</span>` : ""}
         <h3 style="font-size:15px;">${escapeHtml(m.name)}</h3>
         <div class="meta-row"><span>Qté : ${m.quantity}</span><span>${escapeHtml(m.condition)}</span></div>
-        ${m.price_paid != null ? `<span style="font-size:13px;">Payé : ${eur(m.price_paid)}</span>` : ""}
+        ${m.price_paid != null ? `<span class="card-notes" style="font-size:13px;">Payé : ${eur(m.price_paid)}</span>` : ""}
         <div class="card-actions"><button class="btn btn-danger-outline btn-delete-fig">Retirer</button></div>
       </div>
     </div>`).join("")}</div>`;
