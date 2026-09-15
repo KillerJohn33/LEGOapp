@@ -119,6 +119,13 @@
   }
   @media (min-width:800px){ .sidebar{ width:230px; align-self:flex-start; position:sticky; top:24px; } }
   .sidebar-header{ padding:22px 20px 18px; }
+  .global-search-trigger{
+    display:flex; align-items:center; gap:8px; width:100%; margin-top:14px;
+    background:rgba(13,13,13,.12); border:none; border-radius:999px; padding:9px 14px;
+    color:var(--ink); font-size:13px; font-weight:600; text-align:left;
+  }
+  .global-search-trigger:hover{ background:rgba(13,13,13,.2); }
+  .global-search-trigger svg{ width:16px; height:16px; flex-shrink:0; }
   .brick-logo{ margin-top:10px; }
   .brick-logo img{ display:block; height:60px; width:auto; border-radius:8px; filter:drop-shadow(0 5px 12px rgba(0,0,0,.4)); }
   .sidebar h1{ font-size:19px; line-height:1.25; color:var(--ink); }
@@ -489,6 +496,10 @@
       <div class="brick-logo">
         <img src="lego-logo.png" alt="Logo LEGO">
       </div>
+      <button type="button" id="global-search-trigger" class="global-search-trigger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        Rechercher...
+      </button>
     </div>
     <nav class="nav">
       <button class="nav-btn active" data-view="dashboard">Tableau de bord</button>
@@ -1893,6 +1904,110 @@ function openBoxedSetsModal(boxedSets) {
     btn.addEventListener("click", () => openSetDetail(boxedSets[Number(btn.dataset.index)]));
   });
 }
+
+/* ============================================================
+   RECHERCHE GLOBALE (sets + minifigs + liste de souhaits)
+   ============================================================ */
+let globalSearchTimer = null;
+
+function openGlobalSearch() {
+  const overlay = document.getElementById("set-modal-overlay");
+  const panel = document.getElementById("set-modal-panel");
+  overlay.hidden = false;
+  panel.innerHTML = `
+    <button type="button" class="modal-close" id="set-modal-close" aria-label="Fermer">✕</button>
+    <h2 style="font-size:19px;color:var(--body-fg);-webkit-text-stroke:0;text-shadow:none;margin:2px 0 14px;">Recherche</h2>
+    <input type="text" id="global-search-input" placeholder="Nom, numéro de set ou de minifig..."
+      style="width:100%;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--input-bg);color:var(--body-fg);font-size:15px;">
+    <div id="global-search-results" style="margin-top:16px;"></div>
+  `;
+  document.getElementById("set-modal-close").addEventListener("click", closeSetModal);
+  const input = document.getElementById("global-search-input");
+  input.focus();
+  input.addEventListener("input", () => {
+    clearTimeout(globalSearchTimer);
+    globalSearchTimer = setTimeout(() => runGlobalSearch(input.value.trim()), 300);
+  });
+}
+
+async function runGlobalSearch(q) {
+  const resultsEl = document.getElementById("global-search-results");
+  if (!resultsEl) return; // la modale a pu être fermée entre-temps
+  if (q.length < 2) {
+    resultsEl.innerHTML = `<p class="muted" style="font-size:13px;">Tape au moins 2 caractères pour lancer la recherche.</p>`;
+    return;
+  }
+  resultsEl.innerHTML = `<p class="muted" style="font-size:13px;">Recherche...</p>`;
+
+  const [setsRes, minifigsRes, wishlistRes] = await Promise.all([
+    sb.from("owned_sets").select("*").or(`name.ilike.%${q}%,set_num.ilike.%${q}%`).limit(6),
+    sb.from("minifigs").select("*").or(`name.ilike.%${q}%,fig_num.ilike.%${q}%`).limit(6),
+    sb.from("wishlist").select("*").or(`name.ilike.%${q}%,set_num.ilike.%${q}%`).limit(6),
+  ]);
+
+  // Si l'utilisateur a continué à taper, on ignore cette réponse devenue obsolète
+  const currentInput = document.getElementById("global-search-input");
+  if (!currentInput || currentInput.value.trim() !== q) return;
+
+  const sets = setsRes.data || [];
+  const minifigs = minifigsRes.data || [];
+  const wishlist = wishlistRes.data || [];
+
+  if (sets.length === 0 && minifigs.length === 0 && wishlist.length === 0) {
+    resultsEl.innerHTML = `<p class="muted" style="font-size:13px;">Aucun résultat pour « ${escapeHtml(q)} ».</p>`;
+    return;
+  }
+
+  const section = (title, items, renderItem) => items.length === 0 ? "" : `
+    <div style="margin-bottom:16px;">
+      <h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);-webkit-text-stroke:0;text-shadow:none;margin-bottom:8px;">${title}</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">${items.map(renderItem).join("")}</div>
+    </div>`;
+
+  resultsEl.innerHTML =
+    section("Ma collection", sets, (s) => `
+      <button type="button" class="result-item global-result" style="width:100%;" data-type="set" data-id="${s.id}">
+        ${s.img_url ? `<img src="${escapeHtml(s.img_url)}" alt="">` : ""}
+        <span><span class="rname">${escapeHtml(s.name)}</span><br><span class="rnum">${escapeHtml(s.set_num)}</span></span>
+      </button>`) +
+    section("Minifigs", minifigs, (m) => `
+      <button type="button" class="result-item global-result" style="width:100%;" data-type="minifig" data-id="${m.id}">
+        ${m.img_url ? `<img src="${escapeHtml(m.img_url)}" alt="">` : ""}
+        <span><span class="rname">${escapeHtml(m.name)}</span>${m.fig_num ? `<br><span class="rnum">${escapeHtml(m.fig_num)}</span>` : ""}</span>
+      </button>`) +
+    section("Liste de souhaits", wishlist, (w) => `
+      <button type="button" class="result-item global-result" style="width:100%;" data-type="wishlist" data-id="${w.id}">
+        ${w.img_url ? `<img src="${escapeHtml(w.img_url)}" alt="">` : ""}
+        <span><span class="rname">${escapeHtml(w.name)}</span><br><span class="rnum">${escapeHtml(w.set_num)}</span></span>
+      </button>`);
+
+  resultsEl.querySelectorAll(".global-result").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.type;
+      if (type === "set") {
+        const item = sets.find((s) => s.id === btn.dataset.id);
+        if (item) openSetDetail(item);
+      } else if (type === "minifig") {
+        closeSetModal();
+        showView("minifigs");
+      } else {
+        closeSetModal();
+        showView("wishlist");
+      }
+    });
+  });
+}
+
+document.getElementById("global-search-trigger").addEventListener("click", openGlobalSearch);
+
+document.addEventListener("keydown", (e) => {
+  const tag = document.activeElement?.tagName;
+  const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  if (e.key === "/" && !isTyping && !document.querySelector(".app[hidden]")) {
+    e.preventDefault();
+    openGlobalSearch();
+  }
+});
 
 /* ============================================================
    7) AJOUTER UN SET
