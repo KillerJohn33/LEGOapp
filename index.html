@@ -1771,14 +1771,9 @@ async function loadStats() {
         📦 ${boxedSets.length} <span style="font-size:14px;font-weight:500;">encore en boîte</span>
       </p>
       <p class="muted" style="font-size:12px;margin:0 0 8px;">${builtCount} monté(s)/exposé(s) sur ${totalSets} au total.</p>
-      ${boxedSets.length > 0 ? `
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        ${boxedSets.map((s) => `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-            <span>${escapeHtml(s.name)} <span class="muted" style="font-size:12px;">${escapeHtml(s.set_num)}</span></span>
-            <button type="button" class="btn btn-outline btn-fill-value" data-setnum="${escapeHtml(s.set_num)}" style="padding:6px 12px;font-size:13px;">Voir</button>
-          </div>`).join("")}
-      </div>` : `<p class="muted" style="font-size:13px;margin:0;">Tous tes sets sont montés ou exposés 🎉</p>`}
+      ${boxedSets.length > 0
+        ? `<div><button type="button" class="btn btn-outline" id="btn-show-boxed">Détails</button></div>`
+        : `<p class="muted" style="font-size:13px;margin:0;">Tous tes sets sont montés ou exposés 🎉</p>`}
     </div>
 
     ${missingValueSets.length > 0 ? `
@@ -1821,6 +1816,33 @@ async function loadStats() {
       document.getElementById("collection-search").value = btn.dataset.setnum;
       showView("collection");
     });
+  });
+  const showBoxedBtn = document.getElementById("btn-show-boxed");
+  if (showBoxedBtn) showBoxedBtn.addEventListener("click", () => openBoxedSetsModal(boxedSets));
+}
+
+function openBoxedSetsModal(boxedSets) {
+  const overlay = document.getElementById("set-modal-overlay");
+  const panel = document.getElementById("set-modal-panel");
+  overlay.hidden = false;
+  panel.innerHTML = `
+    <button type="button" class="modal-close" id="set-modal-close" aria-label="Fermer">✕</button>
+    <h2 style="font-size:19px;color:var(--body-fg);-webkit-text-stroke:0;text-shadow:none;margin:2px 0 14px;">📦 Sets encore en boîte (${boxedSets.length})</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${boxedSets.map((s, i) => `
+        <div class="result-item" style="width:100%;cursor:default;">
+          ${s.img_url ? `<img src="${escapeHtml(s.img_url)}" alt="">` : ""}
+          <span style="flex:1;">
+            <span class="rname">${escapeHtml(s.name)}</span><br>
+            <span class="rnum">${escapeHtml(s.set_num)}</span>
+          </span>
+          <button type="button" class="btn btn-outline btn-view-boxed-set" data-index="${i}" style="padding:6px 12px;font-size:13px;">Voir</button>
+        </div>`).join("")}
+    </div>
+  `;
+  document.getElementById("set-modal-close").addEventListener("click", closeSetModal);
+  panel.querySelectorAll(".btn-view-boxed-set").forEach((btn) => {
+    btn.addEventListener("click", () => openSetDetail(boxedSets[Number(btn.dataset.index)]));
   });
 }
 
