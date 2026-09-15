@@ -535,6 +535,15 @@
           <button type="submit" class="btn btn-secondary">Rechercher</button>
         </form>
         <div class="result-grid" id="minifig-results"></div>
+        <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:14px;">
+          <p class="muted" style="font-size:12px;margin:0 0 8px;">Certaines minifigs (boîtes collector, packs promo...) sont cataloguées comme des « sets » par Rebrickable. Ajoute-les ici en tapant directement leur numéro, pour qu'elles atterrissent bien dans les minifigs et pas dans ta collection de sets.</p>
+          <form class="search-row" id="minifig-by-num-form">
+            <input type="text" id="minifig-by-num-input" placeholder="Numéro de set (ex: col380 ou 71046-1)...">
+            <button type="submit" class="btn btn-outline">Chercher ce numéro</button>
+          </form>
+          <p class="error-text" id="minifig-by-num-error" hidden style="margin-top:8px;"></p>
+          <div id="minifig-by-num-result"></div>
+        </div>
       </div>
       <div id="minifigs-content"><p class="muted">Chargement...</p></div>
     </section>
@@ -905,6 +914,10 @@ const getLatestReleasedSets = () => rbFetch(`/sets/?ordering=-year,-set_num&min_
 const getSetsByTheme = (themeId, excludeCount) => rbFetch(`/sets/?theme_id=${themeId}&ordering=-year,-set_num&min_parts=${SIGNIFICANT_SET_MIN_PARTS}&page_size=${excludeCount}`);
 const getSetMinifigs = (setNum) => rbFetch(`/sets/${encodeURIComponent(setNum)}/minifigs/?page_size=100`);
 const searchMinifigsApi = (q) => rbFetch(`/minifigs/?search=${encodeURIComponent(q)}&page_size=20`);
+const getSetByExactNumber = (setNum) => {
+  const normalized = setNum.includes("-") ? setNum : `${setNum}-1`;
+  return rbFetch(`/sets/${encodeURIComponent(normalized)}/`);
+};
 
 function brickLinkUrl(setNum) {
   return `https://www.bricklink.com/v2/catalog/catalogitem.page?S=${encodeURIComponent(setNum)}#T=P`;
@@ -2003,6 +2016,59 @@ document.getElementById("minifig-search-form").addEventListener("submit", async 
         document.getElementById("minifig-search-input").value = "";
       }
     });
+  });
+});
+
+document.getElementById("minifig-by-num-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const raw = document.getElementById("minifig-by-num-input").value.trim();
+  if (!raw) return;
+  const errorEl = document.getElementById("minifig-by-num-error");
+  const resultEl = document.getElementById("minifig-by-num-result");
+  const submitBtn = e.target.querySelector("button[type=submit]");
+  errorEl.hidden = true;
+  resultEl.innerHTML = "";
+  submitBtn.disabled = true; submitBtn.textContent = "Recherche...";
+
+  let found;
+  try {
+    found = await getSetByExactNumber(raw);
+  } catch (err) {
+    errorEl.textContent = "Numéro introuvable sur Rebrickable. Vérifie l'orthographe (ex : 71046-1, col380-1).";
+    errorEl.hidden = false;
+    submitBtn.disabled = false; submitBtn.textContent = "Chercher ce numéro";
+    return;
+  }
+  submitBtn.disabled = false; submitBtn.textContent = "Chercher ce numéro";
+
+  resultEl.innerHTML = `
+    <div class="result-item" style="width:100%;cursor:default;">
+      ${found.set_img_url ? `<img src="${escapeHtml(found.set_img_url)}" alt="">` : ""}
+      <span style="flex:1;">
+        <span class="rname">${escapeHtml(found.name)}</span><br>
+        <span class="rnum">${escapeHtml(found.set_num)}${found.year ? ` · ${found.year}` : ""}</span>
+      </span>
+      <button type="button" class="btn btn-secondary" id="minifig-by-num-add" style="padding:6px 14px;font-size:13px;">Ajouter comme minifig</button>
+    </div>`;
+
+  document.getElementById("minifig-by-num-add").addEventListener("click", async () => {
+    const addBtn = document.getElementById("minifig-by-num-add");
+    addBtn.disabled = true; addBtn.textContent = "Ajout...";
+    const { data: inserted, error } = await sb.from("minifigs").insert({
+      user_id: currentUser.id,
+      fig_num: found.set_num, name: found.name, img_url: found.set_img_url, quantity: 1, condition: "neuf",
+    }).select().single();
+    if (error) {
+      errorEl.textContent = error.message;
+      errorEl.hidden = false;
+      addBtn.disabled = false; addBtn.textContent = "Ajouter comme minifig";
+      return;
+    }
+    allMinifigs = [inserted, ...allMinifigs];
+    renderMinifigs();
+    resultEl.innerHTML = "";
+    document.getElementById("minifig-by-num-input").value = "";
+    showToast(`« ${found.name} » ajoutée aux minifigs.`, null, null, null, 3000);
   });
 });
 
