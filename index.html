@@ -245,6 +245,31 @@
 
   /* Sélecteur de vue (grille / mosaïque / liste) */
   .view-switcher{ display:flex; gap:4px; background:rgba(128,128,128,.16); border-radius:999px; padding:4px; }
+
+  /* Barre de navigation flottante — mobile uniquement */
+  .mobile-bottom-nav{ display:none; }
+  @media (max-width:799px){
+    .mobile-bottom-nav{
+      display:flex; gap:2px; align-items:center; justify-content:center;
+      position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+      z-index:150; padding:8px; border-radius:999px;
+      background:rgba(255,210,0,.38);
+      -webkit-backdrop-filter:blur(18px) saturate(180%); backdrop-filter:blur(18px) saturate(180%);
+      border:1px solid rgba(255,255,255,.5);
+      box-shadow:0 10px 30px rgba(0,0,0,.3);
+      max-width:94vw;
+    }
+    /* Laisse de la place en bas pour que le contenu ne soit pas masqué par la bulle */
+    .app{ padding-bottom:88px; }
+  }
+  .mobile-nav-btn{
+    display:flex; align-items:center; justify-content:center;
+    width:42px; height:42px; border-radius:50%; border:none; background:none; flex-shrink:0;
+    color:var(--brick); transition:background .15s,transform .15s;
+  }
+  .mobile-nav-btn svg{ width:21px; height:21px; }
+  .mobile-nav-btn.active{ background:rgba(13,13,13,.14); transform:translateY(-2px); }
+  .mobile-nav-btn:active{ transform:scale(.92); }
   .view-switcher button{
     background:none; border:none; padding:7px 14px; border-radius:999px; font-size:13px; font-weight:600; color:var(--body-fg);
   }
@@ -386,6 +411,9 @@
   #toast-container{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
     z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center; width:min(92vw,420px);
+  }
+  @media (max-width:799px){
+    #toast-container{ bottom:92px; }
   }
   .toast{
     display:flex; align-items:center; gap:14px; justify-content:space-between; width:100%;
@@ -719,6 +747,27 @@
 
   </main>
 </div>
+
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+  <button type="button" class="mobile-nav-btn active" data-view="dashboard" aria-label="Tableau de bord">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+  </button>
+  <button type="button" class="mobile-nav-btn" data-view="collection" aria-label="Ma collection">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  </button>
+  <button type="button" class="mobile-nav-btn" data-view="stats" aria-label="Stats">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="6" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/><rect x="18" y="13" width="3" height="5"/></svg>
+  </button>
+  <button type="button" class="mobile-nav-btn" data-view="minifigs" aria-label="Minifigs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+  </button>
+  <button type="button" class="mobile-nav-btn" data-view="wishlist" aria-label="Liste de souhaits">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+  </button>
+  <button type="button" class="mobile-nav-btn" data-view="options" aria-label="Options">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15 1.65 1.65 0 0 0 3.09 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+</nav>
 
 <script>
 /* ============================================================
@@ -1286,7 +1335,7 @@ function showView(name) {
   views.forEach((v) => {
     document.getElementById(`view-${v}`).hidden = v !== name;
   });
-  document.querySelectorAll(".nav-btn").forEach((btn) => {
+  document.querySelectorAll(".nav-btn, .mobile-nav-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === name);
   });
   if (name === "dashboard") loadDashboard();
@@ -1296,7 +1345,7 @@ function showView(name) {
   if (name === "wishlist") loadWishlist();
   if (name === "options") renderOptionsView();
 }
-document.querySelectorAll(".nav-btn").forEach((btn) => {
+document.querySelectorAll(".nav-btn, .mobile-nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => showView(btn.dataset.view));
 });
 document.querySelectorAll("[data-goto]").forEach((btn) => {
