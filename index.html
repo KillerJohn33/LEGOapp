@@ -1477,20 +1477,7 @@ function showView(name) {
   if (name === "options") renderOptionsView();
 }
 document.querySelectorAll(".nav-btn, .mobile-nav-btn").forEach((btn) => {
-  // Au doigt (tactile), on bascule dès l'appui (touchstart) plutôt qu'au
-  // relâchement, pour un changement d'onglet immédiat. On neutralise ensuite
-  // le "click" de suivi que le navigateur envoie après le toucher, pour ne
-  // pas rappeler showView() une seconde fois pour le même appui.
-  let touchFired = false;
-  btn.addEventListener("touchstart", () => {
-    touchFired = true;
-    showView(btn.dataset.view);
-    setTimeout(() => { touchFired = false; }, 500);
-  }, { passive: true });
-  btn.addEventListener("click", () => {
-    if (touchFired) return;
-    showView(btn.dataset.view);
-  });
+  btn.addEventListener("click", () => showView(btn.dataset.view));
 });
 document.querySelectorAll("[data-goto]").forEach((btn) => {
   btn.addEventListener("click", () => showView(btn.dataset.goto));
