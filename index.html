@@ -83,6 +83,8 @@
   button{ font-family:inherit; cursor:pointer; }
   input, select, textarea{ font-family:inherit; font-size:14px; }
   ::selection{ background:var(--stud); color:var(--ink); }
+  /* Supprime le flash gris au tap sur mobile — look "web" plutôt qu'app native */
+  a, button, .card, .wishlist-row, .news-card{ -webkit-tap-highlight-color:transparent; }
 
   /* Formes décoratives discrètes en fond (remplacent l'ancien dégradé rouge plein écran) */
   .bg-blobs{ position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
@@ -123,7 +125,9 @@
     color:var(--ink); border-radius:var(--radius-lg);
     border:1px solid rgba(0,0,0,.08);
     box-shadow:var(--shadow-md);
-    position:sticky; top:0; z-index:100;
+    /* En app plein écran (iOS), reste toujours sous la barre de statut,
+       même une fois collée en haut au scroll. */
+    position:sticky; top:env(safe-area-inset-top); z-index:100;
   }
   .sidebar-header{
     padding:12px 18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
@@ -325,7 +329,7 @@
   @media (max-width:799px){
     .mobile-bottom-nav{
       display:flex; gap:2px; align-items:center; justify-content:space-between;
-      position:fixed; bottom:calc(28px + env(safe-area-inset-bottom)); left:14px; right:14px;
+      position:fixed; bottom:calc(10px + env(safe-area-inset-bottom)); left:14px; right:14px;
       z-index:150; padding:5px; border-radius:999px;
       background:var(--stud); border:1px solid rgba(0,0,0,.08); box-shadow:var(--shadow-lg);
       /* Safari iOS ne repositionne pas les éléments position:fixed en temps réel
@@ -334,7 +338,7 @@
       -webkit-transform:translateZ(0); transform:translateZ(0); will-change:transform;
     }
     /* Laisse de la place en bas pour que le contenu ne soit pas masqué par la bulle */
-    .app{ padding-bottom:calc(90px + env(safe-area-inset-bottom)); }
+    .app{ padding-bottom:calc(70px + env(safe-area-inset-bottom)); }
   }
   .mobile-nav-btn{
     display:flex; align-items:center; justify-content:center;
