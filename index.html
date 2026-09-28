@@ -319,19 +319,19 @@
   @media (max-width:799px){
     .mobile-bottom-nav{
       display:flex; gap:2px; align-items:center; justify-content:space-between;
-      position:fixed; bottom:14px; left:10px; right:10px;
-      z-index:150; padding:8px; border-radius:20px;
-      background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-lg);
+      position:fixed; bottom:14px; left:14px; right:14px;
+      z-index:150; padding:5px; border-radius:999px;
+      background:var(--stud); border:1px solid rgba(0,0,0,.08); box-shadow:var(--shadow-lg);
     }
     /* Laisse de la place en bas pour que le contenu ne soit pas masqué par la bulle */
-    .app{ padding-bottom:92px; }
+    .app{ padding-bottom:76px; }
   }
   .mobile-nav-btn{
     display:flex; align-items:center; justify-content:center;
-    width:46px; height:46px; flex-shrink:0; border-radius:50%; border:none; background:none;
-    color:var(--muted); transition:background .15s,color .15s,transform .15s;
+    width:40px; height:40px; flex-shrink:0; border-radius:50%; border:none; background:none;
+    color:var(--ink); transition:background .15s,color .15s,transform .15s;
   }
-  .mobile-nav-btn svg{ width:22px; height:22px; }
+  .mobile-nav-btn svg{ width:19px; height:19px; }
   .mobile-nav-btn.active{ background:var(--brick); color:#fff; }
   .mobile-nav-btn:active{ transform:scale(.92); }
   .view-switcher button{
