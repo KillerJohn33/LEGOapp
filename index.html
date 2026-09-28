@@ -158,7 +158,14 @@
      repoussé sous l'encoche/l'horloge via le padding de sécurité. */
   @media (max-width:799px){
     .nav{ display:none; }
-    .sidebar{ margin:0 -16px; border-radius:0 0 var(--radius-lg) var(--radius-lg); border-left:none; border-right:none; border-top:none; }
+    .sidebar{
+      margin:0 -16px; border-radius:0 0 var(--radius-lg) var(--radius-lg); border-left:none; border-right:none; border-top:none;
+      /* Sépare visuellement la bande sous la barre de statut (jaune soutenu) de la
+         barre de titre elle-même (jaune clair), plutôt qu'un seul gros bloc uni. */
+      background:linear-gradient(to bottom,
+        var(--stud-dark) 0, var(--stud-dark) env(safe-area-inset-top),
+        var(--stud) env(safe-area-inset-top), var(--stud) 100%);
+    }
     .sidebar-header{ padding:calc(20px + env(safe-area-inset-top)) 14px 10px; gap:10px; }
     .sidebar h1{ font-size:15px; }
     .brick-mark{ width:28px; height:22px; }
