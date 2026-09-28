@@ -707,8 +707,8 @@
         <label class="field" style="max-width:260px;">
           Thème
           <select id="opt-theme">
-            <option value="light" selected>Clair</option>
-            <option value="dark">Sombre</option>
+            <option value="light">Clair</option>
+            <option value="dark" selected>Sombre</option>
             <option value="auto">Automatique (selon le système)</option>
           </select>
         </label>
@@ -1076,7 +1076,7 @@ const appSettings = {
   refreshSeconds: 60,
   includeMinifigsDefault: true,
   currency: "EUR",
-  theme: "light",
+  theme: "dark",
   defaultView: "grid",
 };
 let autoRefreshTimer = null;
@@ -1193,7 +1193,7 @@ async function loadAppSettings() {
       appSettings.refreshSeconds = data.refresh_seconds || 60;
       appSettings.includeMinifigsDefault = data.include_minifigs_default !== false;
       appSettings.currency = data.currency || "EUR";
-      appSettings.theme = data.theme || "light";
+      appSettings.theme = data.theme || "dark";
       appSettings.defaultView = ["grid", "list"].includes(data.default_view) ? data.default_view : "grid";
       applyAutoRefresh();
       applyTheme();
