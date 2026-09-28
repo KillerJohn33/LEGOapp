@@ -27,7 +27,7 @@ with check (bucket_id='collection-photos' and (storage.foldername(name))[1]=(sel
 -- Un aperçu périmé annule la transaction entière au lieu d'écraser une modification.
 create or replace function public.restore_collector_backup(operations jsonb)
 returns integer language plpgsql security invoker set search_path=public,pg_temp as $$
-declare op jsonb; payload jsonb; previous jsonb; table_name text; allowed text[];
+declare op jsonb; payload jsonb; previous jsonb; target_table text; allowed text[];
   columns_sql text; values_sql text; assignments_sql text; affected integer; total integer := 0;
 begin
   if auth.uid() is null then raise exception 'Authentification requise'; end if;
@@ -36,12 +36,12 @@ begin
   -- Évite deux restaurations simultanées du même compte.
   perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text,0));
   for op in select * from jsonb_array_elements(operations) loop
-    table_name := op->>'table';
-    if table_name not in ('owned_sets','minifigs','wishlist','collector_documents') or
+    target_table := op->>'table';
+    if target_table not in ('owned_sets','minifigs','wishlist','collector_documents') or
       (op->>'action') not in ('insert','update') then raise exception 'Opération interdite'; end if;
     payload := (op->'row') || jsonb_build_object('user_id',auth.uid());
     if jsonb_typeof(payload)<>'object' then raise exception 'Fiche invalide'; end if;
-    if table_name='collector_documents' then
+    if target_table='collector_documents' then
       select to_jsonb(d) into previous from public.collector_documents d
         where user_id=auth.uid() and kind=payload->>'kind' and entry_id=payload->>'entry_id' for update;
       if op->>'action'='update' then
@@ -54,22 +54,22 @@ begin
       end if;
     else
       if coalesce(payload->>'id','')='' then raise exception 'Identifiant manquant'; end if;
-      execute format('select to_jsonb(t) from public.%I t where id::text=$1 and user_id=$2 for update',table_name)
+      execute format('select to_jsonb(t) from public.%I t where id::text=$1 and user_id=$2 for update',target_table)
         into previous using payload->>'id',auth.uid();
       if op->>'action'='update' and (previous is null or previous is distinct from op->'expected') then
         raise exception 'Aperçu périmé : rechargez la sauvegarde'; end if;
-      allowed := case table_name
+      allowed := case target_table
         when 'owned_sets' then array['id','user_id','set_num','name','year','theme_name','num_parts','img_url','quantity','condition','build_status','price_paid','current_value','purchase_date','notes','created_at']
         when 'minifigs' then array['id','user_id','fig_num','name','img_url','quantity','condition','price_paid','owned_set_id','created_at']
         else array['id','user_id','set_num','name','year','theme_name','num_parts','img_url','estimated_price','priority','created_at'] end;
       select string_agg(format('%I',key),','),string_agg(format('r.%I',key),','),
         string_agg(format('%I=r.%I',key,key),',') into columns_sql,values_sql,assignments_sql
       from jsonb_object_keys(payload) as payload_keys(key) where key=any(allowed)
-        and exists(select 1 from information_schema.columns c where c.table_schema='public' and c.table_name=table_name and c.column_name=payload_keys.key);
+        and exists(select 1 from information_schema.columns c where c.table_schema='public' and c.table_name=target_table and c.column_name=payload_keys.key);
       if op->>'action'='insert' then
-        execute format('insert into public.%I (%s) select %s from jsonb_populate_record(null::public.%I,$1) r',table_name,columns_sql,values_sql,table_name) using payload;
+        execute format('insert into public.%I (%s) select %s from jsonb_populate_record(null::public.%I,$1) r',target_table,columns_sql,values_sql,target_table) using payload;
       else
-        execute format('update public.%I t set %s from jsonb_populate_record(null::public.%I,$1) r where t.id::text=$2 and t.user_id=$3',table_name,assignments_sql,table_name)
+        execute format('update public.%I t set %s from jsonb_populate_record(null::public.%I,$1) r where t.id::text=$2 and t.user_id=$3',target_table,assignments_sql,target_table)
           using payload,payload->>'id',auth.uid();
       end if;
       get diagnostics affected = row_count;
