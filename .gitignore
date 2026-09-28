@@ -1,0 +1,20 @@
+# Fichiers hors du périmètre de ce dépôt (autre projet local : audit Blu-ray)
+.edge-bluray-audit/
+.edge-bluray-check/
+.edge-bluray-fix/
+.edge-bluray-fix-2/
+.edge-edition-cover-check/
+.edge-syntax-profile/
+bluray-fix-check.html
+bluray-fix-index.html
+bluray-live-check.html
+bluray-sample.html
+bluray-search.html
+bluray-work/
+edition-cover-check.html
+edition-cover-live.html
+edition-cover-syntax.html
+Données.docx
+
+# Config locale de l'outil Claude Code
+.claude/
