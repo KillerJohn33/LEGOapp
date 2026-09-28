@@ -263,13 +263,13 @@ body{background:radial-gradient(ellipse at 85% 0%,#ffd8560d,transparent 55%),var
 
 .mobile-filter-toggle{display:none}
 .ios-status-strip{display:none}
-/* Tous les boutons de la vue Options, y compris ceux du compte, reprennent le jaune de la navigation. */
-#view-options .btn:not(.btn-danger-outline){
+/* Tous les boutons d'action reprennent le jaune de la navigation sur chaque page. */
+.btn:not(.btn-danger-outline){
   background:var(--yellow-gloss);color:#222637;border:1px solid #dca800;
   box-shadow:inset 0 1px 0 #fff8b7,0 2px 0 #bd8c0026;
 }
-#view-options .btn:not(.btn-danger-outline):hover:not(:disabled){background:linear-gradient(135deg,#fff6a1,#ffce00)}
-#view-options .btn:disabled{opacity:.62}
+.btn:not(.btn-danger-outline):hover:not(:disabled){background:linear-gradient(135deg,#fff6a1,#ffce00)}
+.btn:disabled{opacity:.62}
 
 @media(max-width:799px){
   :root{--ios-status-height:env(safe-area-inset-top,0px)}
