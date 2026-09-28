@@ -270,6 +270,12 @@ body{background:radial-gradient(ellipse at 85% 0%,#ffd8560d,transparent 55%),var
 }
 .btn:not(.btn-danger-outline):hover:not(:disabled){background:linear-gradient(135deg,#fff6a1,#ffce00)}
 .btn:disabled{opacity:.62}
+/* Les commandes Modifier et Détails des vignettes gardent leur ancien style neutre. */
+.cards-grid .card-actions .btn-details,.cards-grid .card-actions .btn-edit{
+  background:var(--surface-gloss);color:var(--body-fg);border-color:var(--border);
+  box-shadow:inset 0 1px 0 #ffffff30,0 2px 5px #14274512;
+}
+.cards-grid .card-actions .btn-details:hover,.cards-grid .card-actions .btn-edit:hover{background:var(--surface-strong)}
 
 @media(max-width:799px){
   :root{--ios-status-height:env(safe-area-inset-top,0px)}
