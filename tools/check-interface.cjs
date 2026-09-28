@@ -28,6 +28,18 @@ const {pathToFileURL}=require('node:url');
     const result=JSON.parse(check.result.value);console.log(theme,JSON.stringify(result));if(result.width!==width||result.overflow||!result.cardVisible||!result.bulkHidden)throw Error('Layout check failed');
     if(width===390||width===1440){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(`ui-${width}-${theme}.png`,Buffer.from(shot.data,'base64'))}
    }
+   if(width===390){
+    await send('Runtime.evaluate',{expression:"document.documentElement.style.setProperty('--ios-status-height','59px');window.scrollTo(0,0)"});
+    await new Promise(r=>setTimeout(r,100));
+    const separation=await send('Runtime.evaluate',{expression:"JSON.stringify({strip:document.querySelector('.ios-status-strip').getBoundingClientRect().bottom,title:document.querySelector('.sidebar').getBoundingClientRect().top,blur:getComputedStyle(document.getElementById('set-modal-overlay')).backdropFilter})",returnByValue:true});
+    const pos=JSON.parse(separation.result.value);if(pos.strip!==59||pos.title<pos.strip||pos.blur!=='none')throw Error('Status separation/blur check failed');
+    await send('Runtime.evaluate',{expression:'window.scrollTo(0,200)'});await new Promise(r=>setTimeout(r,100));
+    const sticky=await send('Runtime.evaluate',{expression:"document.querySelector('.sidebar').getBoundingClientRect().top",returnByValue:true});if(sticky.result.value<59)throw Error('Header overlaps status area on scroll');
+    await send('Runtime.evaluate',{expression:'window.scrollTo(0,0)'});await new Promise(r=>setTimeout(r,100));
+    const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('ui-390-ios-separation.png',Buffer.from(shot.data,'base64'));
+    await send('Runtime.evaluate',{expression:"document.documentElement.style.removeProperty('--ios-status-height')"});
+    console.log('Simulated iOS inset and scrolling OK');
+   }
    for(const view of ['collection','wishlist','options','add','minifigs']){
     await send('Runtime.evaluate',{expression:`views.forEach(v=>document.getElementById('view-'+v).hidden=v!=='${view}');allWishlist=[{...allSets[0],priority:1,estimated_price:150}];renderWishlist();renderOptionsView();`});
     if(['collection','wishlist','minifigs'].includes(view)){

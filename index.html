@@ -442,7 +442,7 @@
   .modal-overlay{
     position:fixed; inset:0; z-index:300; background:rgba(16,18,22,.5);
     display:flex; align-items:center; justify-content:center; padding:20px;
-    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:none; backdrop-filter:none;
   }
   .modal-overlay[hidden]{ display:none; }
   .modal-panel{
@@ -557,7 +557,7 @@
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=4">
+<link rel="stylesheet" href="interface.css?v=5">
 </head>
 <body>
 
@@ -614,6 +614,7 @@
 </div>
 
 <div class="app" hidden>
+  <div class="ios-status-strip" aria-hidden="true"></div>
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="topbar-brand">

@@ -262,15 +262,19 @@ body{background:radial-gradient(ellipse at 85% 0%,#ffd8560d,transparent 55%),var
 }
 
 .mobile-filter-toggle{display:none}
+.ios-status-strip{display:none}
 @media(max-width:799px){
-  /* Une bande ambre sous l'horloge, distincte du titre jaune brillant. */
-  .sidebar::before{
-    content:"";position:absolute;top:0;left:0;right:0;
-    height:env(safe-area-inset-top);background:#c49325;
-    box-shadow:0 1px 0 #fff2a080;pointer-events:none;
+  :root{--ios-status-height:env(safe-area-inset-top,0px)}
+  /* Zone système indépendante : le titre commence sous la barre de statut. */
+  .ios-status-strip{
+    display:block;position:fixed;top:0;left:0;right:0;z-index:160;
+    height:var(--ios-status-height);background:#25262a;
+    box-shadow:inset 0 -2px 0 #08090b;pointer-events:none;
   }
-  .sidebar-header{padding-top:calc(10px + env(safe-area-inset-top));padding-bottom:10px}
-  .app{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  .sidebar::before{content:none}
+  .sidebar{top:var(--ios-status-height)}
+  .sidebar-header{padding-top:10px;padding-bottom:10px}
+  .app{padding-top:var(--ios-status-height);padding-bottom:calc(90px + env(safe-area-inset-bottom))}
   #toast-container{bottom:calc(80px + env(safe-area-inset-bottom))}
   .mobile-filter-toggle{display:inline-flex;gap:7px;margin-left:auto;min-height:44px;padding:9px 13px}
   .mobile-filter-toggle svg{width:18px;height:18px;flex-shrink:0}
@@ -286,4 +290,16 @@ body{background:radial-gradient(ellipse at 85% 0%,#ffd8560d,transparent 55%),var
   #view-minifigs .page-header>.view-switcher{order:2;flex-basis:100%}
   .page-header:has(.mobile-filter-toggle) h2{font-size:24px}
 }
+
+/* Relief net, sans halo ni flou derrière les fenêtres. */
+.sidebar,.mobile-bottom-nav,.nav button,.nav .nav-add,.sidebar .global-search-trigger,
+.brand-icon,.card,.card:hover,.panel,.auth-card,.search-row,.wishlist-row,
+.news-card,.news-card:hover,.highlight-banner,.btn,.btn:hover,.auth-tab,
+.view-switcher button,.brick-stat,.mini-stat-pill,.list-simple,.modal-panel,.toast{
+  box-shadow:inset 0 1px 0 #ffffff30,0 2px 0 #00000018!important;
+  filter:none;-webkit-backdrop-filter:none;backdrop-filter:none;
+}
+.brick-stat .value{text-shadow:none}
+.card-img::after{display:none}
+body{background:var(--bg)}
 
