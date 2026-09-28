@@ -1451,10 +1451,24 @@ document.getElementById("opt-export-excel").addEventListener("click", async (e) 
    4) NAVIGATION
    ============================================================ */
 const views = ["dashboard", "collection", "stats", "add", "minifigs", "wishlist", "options"];
+
+function stopScrollAndGoTop() {
+  // window.scrollTo() seul ne coupe pas toujours l'inertie du scroll tactile
+  // (iOS notamment continue de "glisser" par-dessus). On rend brièvement la
+  // page non scrollable pour stopper net le momentum, puis on remet à zéro
+  // toutes les propriétés de scroll (les navigateurs ne sont pas tous
+  // d'accord sur laquelle lire/écrire), avant de restaurer le scroll.
+  const html = document.documentElement;
+  const prevOverflow = html.style.overflow;
+  html.style.overflow = "hidden";
+  window.scrollTo(0, 0);
+  html.scrollTop = 0;
+  document.body.scrollTop = 0;
+  requestAnimationFrame(() => { html.style.overflow = prevOverflow; });
+}
+
 function showView(name) {
-  // Coupe net le défilement en cours (y compris l'inertie sur mobile) et
-  // repart en haut de la nouvelle page, sans animation.
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  stopScrollAndGoTop();
   views.forEach((v) => {
     document.getElementById(`view-${v}`).hidden = v !== name;
   });
