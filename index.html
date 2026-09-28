@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Ma Briquothèque" />
 <meta name="theme-color" content="#FFD200" />
 <title>Ma Briquothèque — Collection LEGO</title>
-<link rel="icon" type="image/svg+xml" href="favicon-square.svg">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-square-32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="favicon-square-180.png">
+<link rel="icon" type="image/svg+xml" href="favicon-square.svg?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-square-32.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v3.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -557,6 +557,7 @@
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
+<link rel="stylesheet" href="interface.css?v=3">
 </head>
 <body>
 
@@ -566,11 +567,7 @@
 <div id="auth-screen">
   <div class="auth-card">
     <div class="brick-logo" style="justify-content:center;display:flex;">
-      <svg class="brick-mark" viewBox="0 0 40 32" width="46" height="37" role="img" aria-label="Logo Ma Briquothèque">
-        <rect x="3" y="12" width="34" height="17" rx="7" fill="var(--brick)"/>
-        <circle cx="13" cy="8" r="5" fill="var(--stud)"/>
-        <circle cx="27" cy="8" r="5" fill="var(--stud)"/>
-      </svg>
+      <img class="brand-icon" src="favicon-square.svg?v=3" alt="Brique — Ma Briquothèque" width="44" height="44">
     </div>
     <h1 style="text-align:center;font-size:22px;margin-top:10px;">Ma Briquothèque</h1>
     <p class="muted" style="text-align:center;margin-top:-6px;">Connecte-toi pour retrouver ta collection.</p>
@@ -621,23 +618,20 @@
     <div class="sidebar-header">
       <div class="topbar-brand">
         <div class="brick-logo">
-          <svg class="brick-mark" viewBox="0 0 40 32" width="34" height="27" role="img" aria-label="Logo Ma Briquothèque">
-            <rect x="3" y="12" width="34" height="17" rx="7" fill="var(--brick)"/>
-            <circle cx="13" cy="8" r="5" fill="var(--stud)"/>
-            <circle cx="27" cy="8" r="5" fill="var(--stud)"/>
-          </svg>
+          <img class="brand-icon" src="favicon-square.svg?v=3" alt="Brique — Ma Briquothèque" width="44" height="44">
         </div>
         <h1>Ma Briquothèque</h1>
       </div>
-      <nav class="nav">
-        <button class="nav-btn active" data-view="dashboard">Tableau de bord</button>
-        <button class="nav-btn" data-view="collection">Ma collection</button>
-        <button class="nav-btn" data-view="stats">Stats</button>
-        <button class="nav-btn" data-view="minifigs">Minifigs</button>
-        <button class="nav-btn" data-view="wishlist">Liste de souhaits</button>
-        <button class="nav-btn" data-view="options">Options</button>
+      <nav class="nav" aria-label="Navigation principale">
+        <button class="nav-btn active" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Tableau de bord</span></button>
+        <button class="nav-btn" data-view="collection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Ma collection</span></button>
+        <button class="nav-btn" data-view="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="6" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/><rect x="18" y="13" width="3" height="5"/></svg><span>Stats</span></button>
+        <button class="nav-btn" data-view="minifigs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span>Minifigs</span></button>
+        <button class="nav-btn" data-view="wishlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg><span>Liste de souhaits</span></button>
+        <button class="nav-btn" data-view="options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15 1.65 1.65 0 0 0 3.09 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Options</span></button>
+        <button class="nav-add" data-goto="add"><span aria-hidden="true">＋</span> Ajouter un set</button>
       </nav>
-      <button type="button" id="global-search-trigger" class="global-search-trigger">
+      <button type="button" id="global-search-trigger" class="global-search-trigger" aria-label="Rechercher dans ma collection">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <span>Rechercher...</span>
       </button>
@@ -891,25 +885,25 @@
   </main>
 </div>
 
-<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navigation mobile">
   <button type="button" class="mobile-nav-btn active" data-view="dashboard" aria-label="Tableau de bord">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
-  </button>
+  <span>Accueil</span></button>
   <button type="button" class="mobile-nav-btn" data-view="collection" aria-label="Ma collection">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-  </button>
+  <span>Collection</span></button>
   <button type="button" class="mobile-nav-btn" data-view="stats" aria-label="Stats">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="6" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/><rect x="18" y="13" width="3" height="5"/></svg>
-  </button>
+  <span>Stats</span></button>
   <button type="button" class="mobile-nav-btn" data-view="minifigs" aria-label="Minifigs">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
-  </button>
+  <span>Figurines</span></button>
   <button type="button" class="mobile-nav-btn" data-view="wishlist" aria-label="Liste de souhaits">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-  </button>
+  <span>Souhaits</span></button>
   <button type="button" class="mobile-nav-btn" data-view="options" aria-label="Options">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15 1.65 1.65 0 0 0 3.09 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-  </button>
+  <span>Réglages</span></button>
 </nav>
 
 <script>
@@ -1491,6 +1485,7 @@ function showView(name) {
   });
   document.querySelectorAll(".nav-btn, .mobile-nav-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === name);
+    if (btn.dataset.view === name) btn.setAttribute("aria-current", "page"); else btn.removeAttribute("aria-current");
   });
   if (name === "dashboard") loadDashboard();
   if (name === "collection") loadCollection();

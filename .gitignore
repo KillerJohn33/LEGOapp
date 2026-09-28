@@ -18,3 +18,9 @@ Données.docx
 
 # Config locale de l'outil Claude Code
 .claude/
+
+# Captures et profils locaux de validation visuelle
+.edge-ui-review/
+.edge-ui-review-cdp/
+.ui-preview.html
+ui-*.png
