@@ -390,6 +390,12 @@
     border-radius:var(--radius-lg); padding:20px; display:flex; flex-direction:column; gap:14px;
     background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-sm);
   }
+  /* Panneaux dépliables (details/summary) : même look que .panel, contenu masqué tant que fermé */
+  details.panel > summary{ display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; list-style:none; }
+  details.panel > summary::-webkit-details-marker{ display:none; }
+  details.panel > summary h3{ margin:0; }
+  .panel-chevron{ width:18px; height:18px; flex-shrink:0; color:var(--muted); transition:transform .2s; }
+  details.panel[open] > summary .panel-chevron{ transform:rotate(180deg); }
   .duplicate-warning{
     background:rgba(255,213,0,.12); border:1px solid var(--stud-dark); border-radius:var(--radius);
     padding:14px; font-size:14px;
@@ -485,12 +491,12 @@
   /* Stats : records de collection */
   .record-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
   @media (min-width:640px){ .record-grid{ grid-template-columns:repeat(4,1fr); } }
-  .record-card{ display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--bg); border-radius:var(--radius); border:1px solid var(--border); }
+  .record-card{ display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--bg); border-radius:var(--radius); border:1px solid var(--border); min-width:0; }
   .record-card .record-label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--muted); }
   .record-card .record-set{ display:flex; align-items:center; gap:8px; min-width:0; }
   .record-card img{ width:36px; height:36px; object-fit:contain; background:var(--surface); border-radius:6px; padding:2px; flex-shrink:0; }
-  .record-card .record-name{ font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .record-card .record-value{ font-family:var(--font-heading); font-weight:700; font-size:15px; }
+  .record-card .record-name{ font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; }
+  .record-card .record-value{ font-family:var(--font-heading); font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   /* Stats : donuts (répartition neuf/occasion, monté/en boîte) */
   .donut-row{ display:flex; gap:28px; flex-wrap:wrap; }
@@ -2077,6 +2083,7 @@ async function loadStats() {
   const missingValueSets = sets.filter((s) => s.current_value == null);
   const boxedSets = sets.filter((s) => s.build_status === "boite");
   const builtCount = totalSets - boxedSets.reduce((s, x) => s + (x.quantity || 0), 0);
+  const chevronSvg = `<svg class="panel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
 
   el.innerHTML = `
     <div class="stats-grid">
@@ -2111,6 +2118,15 @@ async function loadStats() {
         ${oldestSet ? recordCard("Le plus ancien", oldestSet, String(oldestSet.year)) : ""}
         ${newestSet ? recordCard("Le plus récent", newestSet, String(newestSet.year)) : ""}
       </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Historique d'acquisition</h3>
+      ${acquisitionEntries.length > 0 ? acquisitionEntries.map(([year, count]) => `
+        <div class="theme-bar-row">
+          <div class="theme-label"><span>${year}</span><span class="muted">${count} set(s)</span></div>
+          <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (count / maxAcquisition) * 100)}%;background:var(--stud-dark);"></div></div>
+        </div>`).join("") : `<p class="muted" style="font-size:13px;margin:0;">Pas assez de données pour afficher un historique.</p>`}
     </div>
 
     <div class="panel">
@@ -2161,35 +2177,26 @@ async function loadStats() {
       </div>
     </div>` : ""}
 
-    <div class="panel">
-      <h3 style="font-size:17px;">Répartition des pièces par thème</h3>
+    <details class="panel">
+      <summary><h3 style="font-size:17px;">Répartition des pièces par thème</h3>${chevronSvg}</summary>
       ${themeEntries.map(([theme, pieces]) => `
         <div class="theme-bar-row">
           <div class="theme-label"><span>${escapeHtml(theme)}</span><span class="muted">${pieces.toLocaleString("fr-FR")} pièces</span></div>
           <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (pieces / maxThemePieces) * 100)}%;"></div></div>
         </div>`).join("")}
-    </div>
+    </details>
 
-    <div class="panel">
-      <h3 style="font-size:17px;">Répartition de la valeur par thème</h3>
+    <details class="panel">
+      <summary><h3 style="font-size:17px;">Répartition de la valeur par thème</h3>${chevronSvg}</summary>
       ${themeValueEntries.map(([theme, value]) => `
         <div class="theme-bar-row">
           <div class="theme-label"><span>${escapeHtml(theme)}</span><span class="muted">${eur(value)}</span></div>
           <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (value / maxThemeValue) * 100)}%;background:#2563EB;"></div></div>
         </div>`).join("")}
-    </div>
+    </details>
 
-    <div class="panel">
-      <h3 style="font-size:17px;">Historique d'acquisition</h3>
-      ${acquisitionEntries.length > 0 ? acquisitionEntries.map(([year, count]) => `
-        <div class="theme-bar-row">
-          <div class="theme-label"><span>${year}</span><span class="muted">${count} set(s)</span></div>
-          <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (count / maxAcquisition) * 100)}%;background:var(--stud-dark);"></div></div>
-        </div>`).join("") : `<p class="muted" style="font-size:13px;margin:0;">Pas assez de données pour afficher un historique.</p>`}
-    </div>
-
-    <div class="panel">
-      <h3 style="font-size:17px;">Détail par set</h3>
+    <details class="panel">
+      <summary><h3 style="font-size:17px;">Détail par set</h3>${chevronSvg}</summary>
       <div style="overflow-x:auto;">
         <div class="stats-table">
           <div class="stats-row stats-head">
@@ -2199,7 +2206,7 @@ async function loadStats() {
         </div>
       </div>
       <p class="muted" style="font-size:12px;">Minifigs enregistrées séparément : ${minifigCount}.</p>
-    </div>
+    </details>
   `;
   el.querySelectorAll(".btn-fill-value").forEach((btn) => {
     btn.addEventListener("click", () => {
