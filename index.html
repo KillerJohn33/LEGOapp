@@ -12,10 +12,12 @@
 <link rel="icon" type="image/svg+xml" href="favicon-square.svg?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-square-32.png?v=3">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v3.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="vendor/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="collector-model.js?v=1"></script>
 <style>
   /* ============================================================
      1) CONFIGURATION VISUELLE — design moderne épuré, accents LEGO
@@ -557,7 +559,8 @@
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=5">
+<link rel="stylesheet" href="interface.css?v=6">
+<link rel="stylesheet" href="collector.css?v=1">
 </head>
 <body>
 
@@ -875,12 +878,63 @@
         <p class="error-text" id="opt-export-error" hidden></p>
       </div>
 
+      <div class="panel collector-panel" id="collector-backup-panel">
+        <h3>Sauvegarde et restauration</h3>
+        <p class="muted">L’import affiche d’abord les changements. Aucune donnée n’est supprimée.</p>
+        <div class="collector-actions">
+          <label class="btn btn-outline" for="collector-import-file">Choisir une sauvegarde JSON</label>
+          <input type="file" id="collector-import-file" accept="application/json,.json" hidden>
+          <select id="collector-import-mode" aria-label="Gestion des doublons">
+            <option value="skip">Conserver les fiches existantes</option>
+            <option value="replace">Remplacer les fiches existantes</option>
+            <option value="copy">Créer des copies séparées</option>
+          </select>
+        </div>
+        <div id="collector-import-preview" class="backup-preview" hidden></div>
+        <div class="collector-actions">
+          <button type="button" class="btn btn-primary" id="collector-import-confirm" hidden>Restaurer les changements</button>
+          <span class="collector-status" id="collector-import-status"></span>
+        </div>
+      </div>
+
+      <div class="panel collector-panel" id="collector-dashboard-settings">
+        <h3>Accueil et budget</h3>
+        <label class="field">Budget des prochains achats (€)<input type="number" min="0" step="0.01" id="collector-budget"></label>
+        <div class="collector-form" id="collector-dashboard-fields"></div>
+        <button type="button" class="btn btn-secondary" id="collector-preferences-save">Enregistrer l’accueil</button>
+        <span class="collector-status" id="collector-preferences-status"></span>
+      </div>
+
+      <div class="panel collector-panel" id="collector-history-panel">
+        <h3>Historique des achats</h3>
+        <div class="collector-history" id="collector-purchase-history"><p class="muted">Chargement…</p></div>
+      </div>
+
+      <div class="panel collector-panel">
+        <h3>Consultation hors connexion</h3>
+        <p class="muted">Enregistre une copie privée de lecture sur cet appareil. Elle n’est mise à jour que lorsque tu appuies sur le bouton.</p>
+        <div class="collector-actions">
+          <button type="button" class="btn btn-secondary" id="collector-offline-save">Enregistrer sur cet appareil</button>
+          <button type="button" class="btn btn-outline" id="collector-offline-remove">Effacer la copie locale</button>
+          <span class="collector-status" id="collector-offline-status"></span>
+        </div>
+      </div>
+
       <div style="display:flex;gap:10px;align-items:center;">
         <button class="btn btn-primary" id="opt-save">Enregistrer les options</button>
         <span class="success-text" id="opt-saved" hidden>Options enregistrées.</span>
       </div>
       <p class="error-text" id="opt-error" hidden></p>
       <p class="muted" style="font-size:12px;">Ces réglages sont enregistrés dans Supabase (table <code>app_settings</code>) et retrouvés à chaque ouverture de l'application.</p>
+    </section>
+
+    <section class="view" id="view-showcase" hidden>
+      <div class="page-header">
+        <div><h2>Mode vitrine</h2><p class="muted">Ta collection en grand, sans commandes de modification.</p></div>
+        <button type="button" class="btn btn-outline" data-goto="collection">Retour à la collection</button>
+      </div>
+      <div class="showcase-toolbar"><p class="muted" id="showcase-count"></p></div>
+      <div class="showcase-grid" id="showcase-content"></div>
     </section>
 
   </main>
@@ -2973,6 +3027,8 @@ initAuth();
 <div class="modal-overlay" id="set-modal-overlay" hidden>
   <div class="modal-panel" id="set-modal-panel"></div>
 </div>
+
+<script src="collector.js?v=1"></script>
 
 </body>
 </html>

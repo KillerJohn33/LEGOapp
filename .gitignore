@@ -24,3 +24,6 @@ Données.docx
 .edge-ui-review-cdp/
 .ui-preview.html
 ui-*.png
+.collector-preview.html
+.edge-collector-review/
+.edge-collector-review-*/

@@ -1,0 +1,13 @@
+{
+  "name": "Ma Briquothèque",
+  "short_name": "Briquothèque",
+  "description": "Gestion privée d'une collection LEGO",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1d20",
+  "theme_color": "#FFD200",
+  "icons": [
+    {"src":"/apple-touch-icon-v3.png","sizes":"180x180","type":"image/png"},
+    {"src":"/app-icon-512.png","sizes":"512x512","type":"image/png"}
+  ]
+}
