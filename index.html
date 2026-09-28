@@ -2,7 +2,12 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Ma Briquothèque" />
+<meta name="theme-color" content="#FFD200" />
 <title>Ma Briquothèque — Collection LEGO</title>
 <link rel="icon" type="image/svg+xml" href="favicon-square.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-square-32.png">
@@ -320,12 +325,16 @@
   @media (max-width:799px){
     .mobile-bottom-nav{
       display:flex; gap:2px; align-items:center; justify-content:space-between;
-      position:fixed; bottom:28px; left:14px; right:14px;
+      position:fixed; bottom:calc(28px + env(safe-area-inset-bottom)); left:14px; right:14px;
       z-index:150; padding:5px; border-radius:999px;
       background:var(--stud); border:1px solid rgba(0,0,0,.08); box-shadow:var(--shadow-lg);
+      /* Safari iOS ne repositionne pas les éléments position:fixed en temps réel
+         pendant un scroll actif, sauf s'ils ont leur propre calque GPU : sans ça,
+         un tap pendant le scroll peut viser un emplacement obsolète du bouton. */
+      -webkit-transform:translateZ(0); transform:translateZ(0); will-change:transform;
     }
     /* Laisse de la place en bas pour que le contenu ne soit pas masqué par la bulle */
-    .app{ padding-bottom:90px; }
+    .app{ padding-bottom:calc(90px + env(safe-area-inset-bottom)); }
   }
   .mobile-nav-btn{
     display:flex; align-items:center; justify-content:center;
