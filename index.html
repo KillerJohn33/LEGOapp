@@ -132,7 +132,7 @@
   .global-search-trigger:hover{ background:rgba(13,13,13,.2); }
   .global-search-trigger svg{ width:16px; height:16px; flex-shrink:0; }
   .brick-logo{ margin:0; }
-  .brick-logo img{ display:block; height:34px; width:auto; border-radius:6px; }
+  .brick-mark{ display:block; filter:drop-shadow(0 2px 4px rgba(0,0,0,.18)); }
   .sidebar h1{ font-size:16px; line-height:1.25; color:var(--ink); white-space:nowrap; }
   .nav{ display:flex; flex-direction:row; flex-wrap:wrap; gap:8px 12px; padding:0; }
   .nav button{
@@ -148,7 +148,7 @@
     .nav{ display:none; }
     .sidebar-header{ padding:10px 14px; gap:10px; }
     .sidebar h1{ font-size:15px; }
-    .brick-logo img{ height:28px; }
+    .brick-mark{ width:28px; height:22px; }
     .global-search-trigger span{ display:none; }
     .global-search-trigger{ padding:9px; }
   }
@@ -218,6 +218,14 @@
   .brick-stat.brick-red{ background:linear-gradient(135deg,#F0453A,var(--brick-dark)); }
   .brick-stat.brick-blue{ background:linear-gradient(135deg,#4C8DF0,#2054B8); }
   .brick-stat.brick-green{ background:linear-gradient(135deg,#3FBE7C,#1D9A5D); }
+
+  /* Téléphone : cartes stats plus compactes et uniformes (chiffres de longueurs variables) */
+  @media (max-width:480px){
+    .stats-grid{ gap:10px; }
+    .brick-stat{ padding:12px; border-radius:10px; }
+    .brick-stat .label{ font-size:10.5px; margin-bottom:2px; }
+    .brick-stat .value{ font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  }
 
   /* Dashboard : mise en avant + actualités */
   #dashboard-content{ display:flex; flex-direction:column; gap:26px; }
@@ -293,6 +301,15 @@
   .cards-list .card-body{ padding:10px 14px; gap:4px; }
   .cards-list .card-body h3{ font-size:14px; }
   .cards-list .edit-mode{ width:100%; }
+
+  .card-img{ cursor:pointer; }
+
+  /* Téléphone : grille "juste les photos" pour collection et minifigs — le détail s'ouvre au clic */
+  @media (max-width:600px){
+    .cards-grid{ grid-template-columns:repeat(3,1fr); gap:8px; }
+    .cards-grid .card{ border-radius:10px; box-shadow:none; }
+    .cards-grid .card-body, .cards-grid .card-select, .cards-grid .boxed-badge{ display:none; }
+  }
 
   /* Sélecteur de vue (grille / mosaïque / liste) */
   .view-switcher{ display:flex; gap:2px; background:var(--bg); border-radius:10px; padding:3px; border:1px solid var(--border); }
@@ -416,14 +433,27 @@
   #wishlist-content{ display:flex; flex-direction:column; gap:12px; }
   .wishlist-row{
     display:flex; align-items:center; gap:14px; border-radius:var(--radius); padding:14px; flex-wrap:wrap;
-    background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-sm);
+    background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-sm); cursor:pointer;
+    transition:border-color .15s;
   }
+  .wishlist-row:hover{ border-color:var(--muted); }
   .wishlist-row img{ width:60px; height:60px; object-fit:contain; background:var(--bg); border-radius:8px; padding:4px; }
   .priority-tag{ font-size:12px; color:#fff; padding:4px 10px; border-radius:999px; font-weight:600; }
   .priority-1{ background:var(--brick); }
   .priority-2{ background:var(--stud-dark); color:var(--ink); }
   .priority-3{ background:var(--muted); color:#fff; }
   .wishlist-actions{ display:flex; flex-direction:column; gap:6px; }
+
+  /* Téléphone : grille "juste les photos" pour la liste de souhaits — le détail s'ouvre au clic */
+  @media (max-width:600px){
+    #wishlist-content{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .wishlist-row{
+      display:block; padding:0; border-radius:10px; overflow:hidden; box-shadow:none;
+      aspect-ratio:1/1;
+    }
+    .wishlist-row > *:not(img){ display:none; }
+    .wishlist-row img{ width:100%; height:100%; object-fit:cover; border-radius:0; padding:0; background:var(--bg); }
+  }
 
   .list-simple{
     list-style:none; margin:0; padding:0; border-radius:var(--radius); overflow:hidden;
@@ -505,7 +535,11 @@
 <div id="auth-screen">
   <div class="auth-card">
     <div class="brick-logo" style="justify-content:center;display:flex;">
-      <img src="lego-logo.png" alt="Logo LEGO" style="height:52px;">
+      <svg class="brick-mark" viewBox="0 0 40 32" width="46" height="37" role="img" aria-label="Logo Ma Briquothèque">
+        <rect x="3" y="12" width="34" height="17" rx="7" fill="var(--brick)"/>
+        <circle cx="13" cy="8" r="5" fill="var(--stud)"/>
+        <circle cx="27" cy="8" r="5" fill="var(--stud)"/>
+      </svg>
     </div>
     <h1 style="text-align:center;font-size:22px;margin-top:10px;">Ma Briquothèque</h1>
     <p class="muted" style="text-align:center;margin-top:-6px;">Connecte-toi pour retrouver ta collection.</p>
@@ -556,7 +590,11 @@
     <div class="sidebar-header">
       <div class="topbar-brand">
         <div class="brick-logo">
-          <img src="lego-logo.png" alt="Logo LEGO">
+          <svg class="brick-mark" viewBox="0 0 40 32" width="34" height="27" role="img" aria-label="Logo Ma Briquothèque">
+            <rect x="3" y="12" width="34" height="17" rx="7" fill="var(--brick)"/>
+            <circle cx="13" cy="8" r="5" fill="var(--stud)"/>
+            <circle cx="27" cy="8" r="5" fill="var(--stud)"/>
+          </svg>
         </div>
         <h1>Ma Briquothèque</h1>
       </div>
@@ -1691,6 +1729,29 @@ function setCardHtml(item) {
   </div>`;
 }
 
+function removeSet(id) {
+  const removedItem = allSets.find((s) => s.id === id);
+  const removedIndex = allSets.findIndex((s) => s.id === id);
+  if (!removedItem) return;
+  allSets = allSets.filter((s) => s.id !== id);
+  selectedSetIds.delete(id);
+  renderCollection();
+  showToast(
+    `« ${removedItem.name} » retiré de ta collection.`,
+    "Annuler",
+    () => { allSets.splice(removedIndex, 0, removedItem); renderCollection(); },
+    async () => { await sb.from("owned_sets").delete().eq("id", id); }
+  );
+}
+
+async function saveSetPatch(id, patch) {
+  const { error } = await sb.from("owned_sets").update(patch).eq("id", id);
+  if (!error) {
+    allSets = allSets.map((s) => (s.id === id ? { ...s, ...patch } : s));
+  }
+  return error;
+}
+
 function attachCollectionEvents() {
   document.querySelectorAll("#collection-content .card").forEach((card) => {
     const id = card.dataset.id;
@@ -1700,6 +1761,11 @@ function attachCollectionEvents() {
     card.querySelector(".card-select").addEventListener("change", (e) => {
       if (e.target.checked) selectedSetIds.add(id); else selectedSetIds.delete(id);
       updateBulkBar();
+    });
+    card.querySelector(".card-img").addEventListener("click", (e) => {
+      if (e.target.closest(".card-select")) return;
+      const item = allSets.find((s) => s.id === id);
+      if (item) openSetDetail(item);
     });
     card.querySelector(".btn-details").addEventListener("click", () => {
       const item = allSets.find((s) => s.id === id);
@@ -1711,19 +1777,7 @@ function attachCollectionEvents() {
     card.querySelector(".btn-cancel").addEventListener("click", () => {
       viewMode.hidden = false; editMode.hidden = true;
     });
-    card.querySelector(".btn-delete").addEventListener("click", () => {
-      const removedItem = allSets.find((s) => s.id === id);
-      const removedIndex = allSets.findIndex((s) => s.id === id);
-      allSets = allSets.filter((s) => s.id !== id);
-      selectedSetIds.delete(id);
-      renderCollection();
-      showToast(
-        `« ${removedItem.name} » retiré de ta collection.`,
-        "Annuler",
-        () => { allSets.splice(removedIndex, 0, removedItem); renderCollection(); },
-        async () => { await sb.from("owned_sets").delete().eq("id", id); }
-      );
-    });
+    card.querySelector(".btn-delete").addEventListener("click", () => removeSet(id));
     card.querySelector(".btn-save").addEventListener("click", async () => {
       const patch = {
         quantity: Number(card.querySelector(".f-quantity").value) || 1,
@@ -1734,11 +1788,8 @@ function attachCollectionEvents() {
         theme_name: card.querySelector(".f-theme").value.trim() || null,
         notes: card.querySelector(".f-notes").value || null,
       };
-      const { error } = await sb.from("owned_sets").update(patch).eq("id", id);
-      if (!error) {
-        allSets = allSets.map((s) => (s.id === id ? { ...s, ...patch } : s));
-        renderCollection();
-      }
+      await saveSetPatch(id, patch);
+      renderCollection();
     });
   });
   updateBulkBar();
@@ -1829,12 +1880,63 @@ async function openSetDetail(item) {
           <a class="bricklink-link" style="margin-top:0;" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
           <a class="bricklink-link" style="margin-top:0;" href="https://rebrickable.com/sets/${encodeURIComponent(item.set_num)}/" target="_blank" rel="noopener noreferrer">Voir sur Rebrickable ↗</a>
         </div>
+        <div class="card-actions" style="margin-top:14px;">
+          <button type="button" class="btn btn-outline" id="set-modal-edit-btn">Modifier</button>
+          <button type="button" class="btn btn-danger-outline" id="set-modal-delete-btn">Retirer</button>
+        </div>
+      </div>
+    </div>
+    <div id="set-modal-edit-form" hidden style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+      <div class="edit-form">
+        <label class="field">Quantité<input type="number" min="1" class="f-quantity" value="${item.quantity}"></label>
+        <label class="field">État
+          <select class="f-condition">
+            <option value="neuf" ${item.condition === "neuf" ? "selected" : ""}>Neuf</option>
+            <option value="occasion" ${item.condition === "occasion" ? "selected" : ""}>Occasion</option>
+          </select>
+        </label>
+        <label class="field">Statut
+          <select class="f-build-status">
+            <option value="expose" ${item.build_status !== "boite" ? "selected" : ""}>Monté / exposé</option>
+            <option value="boite" ${item.build_status === "boite" ? "selected" : ""}>Encore en boîte</option>
+          </select>
+        </label>
+        <label class="field">Valeur d'achat (€)<input type="number" step="0.01" class="f-price" value="${item.price_paid ?? ""}"></label>
+        <label class="field">Valeur estimée (€)<input type="number" step="0.01" class="f-value" value="${item.current_value ?? ""}"></label>
+        <label class="field">Thème<input type="text" class="f-theme" value="${escapeHtml(item.theme_name ?? "")}"></label>
+        <label class="field">Notes<textarea class="f-notes" rows="2">${escapeHtml(item.notes ?? "")}</textarea></label>
+        <div class="card-actions">
+          <button type="button" class="btn btn-secondary" id="set-modal-save-btn">Enregistrer</button>
+          <button type="button" class="btn btn-outline" id="set-modal-cancel-btn">Annuler</button>
+        </div>
       </div>
     </div>
     <h3 style="font-size:16px;margin-top:22px;color:var(--body-fg);-webkit-text-stroke:0;text-shadow:none;">Minifigs incluses</h3>
     <div id="set-modal-figs" style="margin-top:10px;"><p class="muted">Chargement...</p></div>
   `;
   document.getElementById("set-modal-close").addEventListener("click", closeSetModal);
+
+  const editForm = document.getElementById("set-modal-edit-form");
+  document.getElementById("set-modal-edit-btn").addEventListener("click", () => { editForm.hidden = false; });
+  document.getElementById("set-modal-cancel-btn").addEventListener("click", () => { editForm.hidden = true; });
+  document.getElementById("set-modal-delete-btn").addEventListener("click", () => {
+    closeSetModal();
+    removeSet(item.id);
+  });
+  document.getElementById("set-modal-save-btn").addEventListener("click", async () => {
+    const patch = {
+      quantity: Number(editForm.querySelector(".f-quantity").value) || 1,
+      condition: editForm.querySelector(".f-condition").value,
+      build_status: editForm.querySelector(".f-build-status").value,
+      price_paid: editForm.querySelector(".f-price").value === "" ? null : Number(editForm.querySelector(".f-price").value),
+      current_value: editForm.querySelector(".f-value").value === "" ? null : Number(editForm.querySelector(".f-value").value),
+      theme_name: editForm.querySelector(".f-theme").value.trim() || null,
+      notes: editForm.querySelector(".f-notes").value || null,
+    };
+    await saveSetPatch(item.id, patch);
+    closeSetModal();
+    renderCollection();
+  });
 
   const figsEl = document.getElementById("set-modal-figs");
   const { data: figs, error } = await sb.from("minifigs").select("*").eq("owned_set_id", item.id);
@@ -2476,6 +2578,49 @@ document.querySelectorAll("#minifigs-view-switcher button").forEach((btn) => {
   });
 });
 
+function removeMinifig(id) {
+  const removedItem = allMinifigs.find((m) => m.id === id);
+  const removedIndex = allMinifigs.findIndex((m) => m.id === id);
+  if (!removedItem) return;
+  allMinifigs = allMinifigs.filter((m) => m.id !== id);
+  renderMinifigs();
+  showToast(
+    `« ${removedItem.name} » retirée.`,
+    "Annuler",
+    () => { allMinifigs.splice(removedIndex, 0, removedItem); renderMinifigs(); },
+    async () => { await sb.from("minifigs").delete().eq("id", id); }
+  );
+}
+
+function openMinifigDetail(item) {
+  const overlay = document.getElementById("set-modal-overlay");
+  const panel = document.getElementById("set-modal-panel");
+  overlay.hidden = false;
+  panel.innerHTML = `
+    <button type="button" class="modal-close" id="set-modal-close" aria-label="Fermer">✕</button>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <img src="${escapeHtml(item.img_url || "")}" alt="" style="width:150px;height:150px;object-fit:contain;background:var(--bg);border-radius:12px;padding:8px;flex-shrink:0;">
+      <div style="flex:1;min-width:200px;">
+        ${item.fig_num ? `<span class="ref">${escapeHtml(item.fig_num)}</span>` : ""}
+        <h2 style="font-size:20px;color:var(--body-fg);margin:2px 0 6px;">${escapeHtml(item.name)}</h2>
+        <div class="detail-row">
+          <span>Qté : <strong>${item.quantity}</strong></span>
+          <span>État : <strong>${escapeHtml(item.condition)}</strong></span>
+          ${item.price_paid != null ? `<span>Payé : <strong>${eur(item.price_paid)}</strong></span>` : ""}
+        </div>
+        <div class="card-actions" style="margin-top:14px;">
+          <button type="button" class="btn btn-danger-outline" id="minifig-modal-delete-btn">Retirer</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById("set-modal-close").addEventListener("click", closeSetModal);
+  document.getElementById("minifig-modal-delete-btn").addEventListener("click", () => {
+    closeSetModal();
+    removeMinifig(item.id);
+  });
+}
+
 function renderMinifigs() {
   const el = document.getElementById("minifigs-content");
   if (allMinifigs.length === 0) {
@@ -2494,20 +2639,15 @@ function renderMinifigs() {
       </div>
     </div>`).join("")}</div>`;
 
-  el.querySelectorAll(".btn-delete-fig").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.closest(".card").dataset.id;
-      const removedItem = allMinifigs.find((m) => m.id === id);
-      const removedIndex = allMinifigs.findIndex((m) => m.id === id);
-      allMinifigs = allMinifigs.filter((m) => m.id !== id);
-      renderMinifigs();
-      showToast(
-        `« ${removedItem.name} » retirée.`,
-        "Annuler",
-        () => { allMinifigs.splice(removedIndex, 0, removedItem); renderMinifigs(); },
-        async () => { await sb.from("minifigs").delete().eq("id", id); }
-      );
+  el.querySelectorAll(".card").forEach((card) => {
+    const id = card.dataset.id;
+    card.querySelector(".card-img").addEventListener("click", () => {
+      const item = allMinifigs.find((m) => m.id === id);
+      if (item) openMinifigDetail(item);
     });
+  });
+  el.querySelectorAll(".btn-delete-fig").forEach((btn) => {
+    btn.addEventListener("click", () => removeMinifig(btn.closest(".card").dataset.id));
   });
 }
 
@@ -2607,13 +2747,78 @@ async function loadWishlist() {
   renderWishlist();
 }
 
+const wishlistPriorityLabels = { 1: "Haute", 2: "Moyenne", 3: "Basse" };
+
+function removeWishlistItem(item) {
+  const removedIndex = allWishlist.findIndex((i) => i.id === item.id);
+  allWishlist = allWishlist.filter((i) => i.id !== item.id);
+  renderWishlist();
+  showToast(
+    `« ${item.name} » retiré de la liste de souhaits.`,
+    "Annuler",
+    () => { allWishlist.splice(removedIndex, 0, item); renderWishlist(); },
+    async () => { await sb.from("wishlist").delete().eq("id", item.id); }
+  );
+}
+
+async function buyWishlistItem(item) {
+  const { error: insertError } = await sb.from("owned_sets").insert({
+    user_id: currentUser.id,
+    set_num: item.set_num, name: item.name, year: item.year, theme_name: item.theme_name,
+    num_parts: item.num_parts, img_url: item.img_url, quantity: 1, condition: "neuf",
+    price_paid: item.estimated_price,
+  });
+  if (!insertError) {
+    await sb.from("wishlist").delete().eq("id", item.id);
+    allWishlist = allWishlist.filter((i) => i.id !== item.id);
+    renderWishlist();
+  }
+}
+
+function openWishlistDetail(item) {
+  const overlay = document.getElementById("set-modal-overlay");
+  const panel = document.getElementById("set-modal-panel");
+  overlay.hidden = false;
+  panel.innerHTML = `
+    <button type="button" class="modal-close" id="set-modal-close" aria-label="Fermer">✕</button>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+      <img src="${escapeHtml(item.img_url || "")}" alt="" style="width:150px;height:150px;object-fit:contain;background:var(--bg);border-radius:12px;padding:8px;flex-shrink:0;">
+      <div style="flex:1;min-width:200px;">
+        <span class="ref">${escapeHtml(item.set_num)}</span>
+        <h2 style="font-size:20px;color:var(--body-fg);margin:2px 0 6px;">${escapeHtml(item.name)}</h2>
+        <div class="meta-row" style="margin-bottom:8px;">
+          ${item.year ? `<span>${item.year}</span>` : ""}
+          ${item.estimated_price != null ? `<span>${eur(item.estimated_price)} estimé</span>` : ""}
+        </div>
+        <span class="priority-tag priority-${item.priority}">Priorité ${wishlistPriorityLabels[item.priority]}</span>
+        <div style="margin-top:10px;">
+          <a class="bricklink-link" style="margin-top:0;" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
+        </div>
+        <div class="card-actions" style="margin-top:14px;">
+          <button type="button" class="btn btn-secondary" id="wishlist-modal-buy-btn">J'ai acheté ce set</button>
+          <button type="button" class="btn btn-outline" id="wishlist-modal-remove-btn">Retirer</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById("set-modal-close").addEventListener("click", closeSetModal);
+  document.getElementById("wishlist-modal-remove-btn").addEventListener("click", () => {
+    closeSetModal();
+    removeWishlistItem(item);
+  });
+  document.getElementById("wishlist-modal-buy-btn").addEventListener("click", async () => {
+    closeSetModal();
+    await buyWishlistItem(item);
+  });
+}
+
 function renderWishlist() {
   const el = document.getElementById("wishlist-content");
   if (allWishlist.length === 0) {
     el.innerHTML = `<div class="empty-state"><h3>Aucun set en liste de souhaits</h3><p>Recherche un set ci-dessus pour l'ajouter à ta liste.</p></div>`;
     return;
   }
-  const labels = { 1: "Haute", 2: "Moyenne", 3: "Basse" };
+  const labels = wishlistPriorityLabels;
   el.innerHTML = allWishlist.map((item) => `
     <div class="wishlist-row" data-id="${item.id}">
       <img src="${escapeHtml(item.img_url || "")}" alt="">
@@ -2633,29 +2838,17 @@ function renderWishlist() {
   el.querySelectorAll(".wishlist-row").forEach((row) => {
     const id = row.dataset.id;
     const item = allWishlist.find((i) => i.id === id);
-    row.querySelector(".btn-remove").addEventListener("click", () => {
-      const removedIndex = allWishlist.findIndex((i) => i.id === id);
-      allWishlist = allWishlist.filter((i) => i.id !== id);
-      renderWishlist();
-      showToast(
-        `« ${item.name} » retiré de la liste de souhaits.`,
-        "Annuler",
-        () => { allWishlist.splice(removedIndex, 0, item); renderWishlist(); },
-        async () => { await sb.from("wishlist").delete().eq("id", id); }
-      );
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".wishlist-actions")) return;
+      openWishlistDetail(item);
     });
-    row.querySelector(".btn-move").addEventListener("click", async () => {
-      const { error: insertError } = await sb.from("owned_sets").insert({
-        user_id: currentUser.id,
-        set_num: item.set_num, name: item.name, year: item.year, theme_name: item.theme_name,
-        num_parts: item.num_parts, img_url: item.img_url, quantity: 1, condition: "neuf",
-        price_paid: item.estimated_price,
-      });
-      if (!insertError) {
-        await sb.from("wishlist").delete().eq("id", id);
-        allWishlist = allWishlist.filter((i) => i.id !== id);
-        renderWishlist();
-      }
+    row.querySelector(".btn-remove").addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeWishlistItem(item);
+    });
+    row.querySelector(".btn-move").addEventListener("click", (e) => {
+      e.stopPropagation();
+      buyWishlistItem(item);
     });
   });
 }
