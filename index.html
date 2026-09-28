@@ -557,7 +557,7 @@
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=3">
+<link rel="stylesheet" href="interface.css?v=4">
 </head>
 <body>
 
@@ -1468,6 +1468,42 @@ document.getElementById("opt-export-excel").addEventListener("click", async (e) 
    4) NAVIGATION
    ============================================================ */
 const views = ["dashboard", "collection", "stats", "add", "minifigs", "wishlist", "options"];
+
+// Les contrôles restent accessibles sur ordinateur et se replient sur téléphone.
+function initMobileFilters() {
+  const mobile = window.matchMedia("(max-width:799px)");
+  [
+    ["collection", ".search-row"],
+    ["minifigs", ".panel"],
+    ["wishlist", ".panel"],
+  ].forEach(([name, selector]) => {
+    const view = document.getElementById(`view-${name}`);
+    const panel = view.querySelector(selector);
+    panel.id = `${name}-filters`;
+    panel.classList.add("mobile-filter-panel");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-outline mobile-filter-toggle";
+    button.setAttribute("aria-controls", panel.id);
+    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--surface)"/><circle cx="15" cy="17" r="3" fill="var(--surface)"/></svg><span>Filtrer</span><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
+    const sync = () => button.setAttribute("aria-expanded", String(!mobile.matches || panel.classList.contains("is-open")));
+    button.addEventListener("click", () => {
+      panel.classList.toggle("is-open");
+      sync();
+    });
+    panel.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && mobile.matches) {
+        panel.classList.remove("is-open");
+        sync();
+        button.focus();
+      }
+    });
+    mobile.addEventListener("change", sync);
+    view.querySelector(".page-header").appendChild(button);
+    sync();
+  });
+}
+initMobileFilters();
 
 function stopScrollAndGoTop() {
   // Remet le scroll à zéro (et coupe au passage l'inertie du scroll tactile,
