@@ -219,6 +219,45 @@
   .brick-stat.brick-blue{ background:linear-gradient(135deg,#4C8DF0,#2054B8); }
   .brick-stat.brick-green{ background:linear-gradient(135deg,#3FBE7C,#1D9A5D); }
 
+  /* Dashboard : mise en avant + actualités */
+  .quick-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+  .mini-stat-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .mini-stat-pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--body-fg);
+    background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:8px 14px; box-shadow:var(--shadow-sm);
+  }
+  .mini-stat-pill strong{ color:var(--brick); }
+
+  .highlight-banner{
+    display:flex; gap:20px; align-items:center; flex-wrap:wrap; padding:20px;
+    border-radius:var(--radius-lg); background:var(--surface);
+    border:1px solid var(--border); box-shadow:var(--shadow-sm); position:relative; overflow:hidden;
+  }
+  .highlight-banner::before{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(120deg, rgba(226,35,26,.07), rgba(255,210,0,.12)); pointer-events:none;
+  }
+  .highlight-banner img{ width:92px; height:92px; object-fit:contain; background:var(--bg); border-radius:12px; padding:8px; flex-shrink:0; position:relative; }
+  .highlight-banner .tag{
+    display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    color:var(--brick); margin-bottom:4px; position:relative;
+  }
+  .highlight-banner h3{ font-size:18px; margin:0 0 2px; position:relative; }
+  .highlight-banner .actions{ margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; position:relative; }
+
+  .news-scroll{ display:flex; gap:14px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; }
+  .news-scroll::-webkit-scrollbar{ height:6px; }
+  .news-scroll::-webkit-scrollbar-thumb{ background:var(--border); border-radius:999px; }
+  .news-card{
+    scroll-snap-align:start; flex:0 0 190px; display:flex; flex-direction:column; gap:8px; padding:12px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm);
+    transition:transform .15s, box-shadow .15s; text-decoration:none; color:inherit;
+  }
+  .news-card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); border-color:var(--muted); }
+  .news-card img{ width:100%; aspect-ratio:1/1; object-fit:contain; background:var(--bg); border-radius:8px; padding:8px; }
+  .news-card h4{ font-size:13px; font-weight:600; margin:0; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .news-card .meta-row{ font-size:11px; }
+
   /* Cards grid (sets / minifigs) */
   .cards-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
   @media (min-width:640px){ .cards-grid{ grid-template-columns:repeat(3,1fr); } }
@@ -231,7 +270,8 @@
   .cards-grid .card-body h3{ font-size:14px; }
   .cards-grid .meta-row{ font-size:12px; }
   .cards-grid .card-actions{ padding-top:6px; }
-  .cards-grid .card-actions .btn{ padding:5px 10px; font-size:12px; }
+  .cards-grid .card-actions .btn{ padding:7px 8px; font-size:12px; }
+  .cards-grid .card-actions .btn span{ display:none; }
 
   /* Vue liste : lignes compactes, image à gauche */
   .cards-list{ display:flex; flex-direction:column; gap:8px; }
@@ -276,12 +316,18 @@
   .card-img{ aspect-ratio:1/1; background:var(--bg); display:flex; align-items:center; justify-content:center; position:relative; }
   .card-img img{ max-width:100%; max-height:100%; object-fit:contain; padding:10px; }
   .card-body{ padding:14px; display:flex; flex-direction:column; gap:6px; flex:1; }
+  .card-body-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .card-body .ref{ font-size:12px; color:var(--muted); }
-  .card-body h3{ font-size:16px; line-height:1.25; }
+  .card-body h3{ font-size:16px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .meta-row{ display:flex; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--muted); }
   .detail-row{ display:flex; gap:14px; flex-wrap:wrap; font-size:14px; }
   .card-actions{ margin-top:auto; padding-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
   .card-actions .btn{ padding:7px 14px; font-size:13px; }
+  .card-actions .btn svg{ width:14px; height:14px; flex-shrink:0; }
+
+  .condition-badge{ font-size:11px; font-weight:600; padding:2px 9px; border-radius:999px; white-space:nowrap; flex-shrink:0; }
+  .condition-badge.neuf{ background:rgba(29,154,93,.15); color:#1D9A5D; }
+  .condition-badge.occasion{ background:rgba(102,112,133,.15); color:var(--muted); }
   .edit-form{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
   .bricklink-link{
     display:inline-flex; align-items:center; gap:4px; margin-top:8px;
@@ -392,6 +438,27 @@
   .theme-label{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
   .theme-bar-track{ background:var(--bg); border-radius:999px; height:8px; overflow:hidden; }
   .theme-bar-fill{ height:100%; border-radius:999px; background:var(--brick); }
+
+  /* Stats : records de collection */
+  .record-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  @media (min-width:640px){ .record-grid{ grid-template-columns:repeat(4,1fr); } }
+  .record-card{ display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--bg); border-radius:var(--radius); border:1px solid var(--border); }
+  .record-card .record-label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--muted); }
+  .record-card .record-set{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .record-card img{ width:36px; height:36px; object-fit:contain; background:var(--surface); border-radius:6px; padding:2px; flex-shrink:0; }
+  .record-card .record-name{ font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .record-card .record-value{ font-family:var(--font-heading); font-weight:700; font-size:15px; }
+
+  /* Stats : donuts (répartition neuf/occasion, monté/en boîte) */
+  .donut-row{ display:flex; gap:28px; flex-wrap:wrap; }
+  .donut-wrap{ display:flex; align-items:center; gap:16px; }
+  .donut{ position:relative; width:106px; height:106px; border-radius:50%; flex-shrink:0; }
+  .donut::before{ content:""; position:absolute; inset:16px; border-radius:50%; background:var(--surface); }
+  .donut-center{ position:relative; z-index:1; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; }
+  .donut-center strong{ font-family:var(--font-heading); font-size:17px; }
+  .donut-center span{ font-size:11px; color:var(--muted); }
+  .donut-legend{ display:flex; flex-direction:column; gap:6px; font-size:13px; }
+  .donut-legend .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px; flex-shrink:0; }
 
   #stats-content{ display:flex; flex-direction:column; gap:20px; }
 
@@ -1402,17 +1469,12 @@ async function loadDashboard() {
 
   const newsHtml = newsUnavailable || latestSets.length === 0
     ? `<p class="muted">Actualités indisponibles pour le moment (Rebrickable injoignable).</p>`
-    : `<ul class="list-simple">${latestSets.map((s) => `
-      <li style="align-items:center;gap:12px;">
-        <span style="display:flex;align-items:center;gap:10px;min-width:0;">
-          ${s.set_img_url ? `<img src="${escapeHtml(s.set_img_url)}" alt="" style="width:38px;height:38px;object-fit:contain;background:var(--bg);border-radius:6px;flex-shrink:0;">` : ""}
-          <span style="min-width:0;">
-            <strong style="display:block;">${escapeHtml(s.name)}</strong>
-            <span class="muted" style="font-size:12px;">${escapeHtml(s.set_num)} · ${s.year || "—"}${s.theme_name ? ` · ${escapeHtml(s.theme_name)}` : ""}</span>
-          </span>
-        </span>
-        <a class="bricklink-link" style="margin-top:0;" href="https://rebrickable.com/sets/${encodeURIComponent(s.set_num)}/" target="_blank" rel="noopener noreferrer">Voir ↗</a>
-      </li>`).join("")}</ul>`;
+    : `<div class="news-scroll">${latestSets.map((s) => `
+      <a class="news-card" href="https://rebrickable.com/sets/${encodeURIComponent(s.set_num)}/" target="_blank" rel="noopener noreferrer">
+        ${s.set_img_url ? `<img src="${escapeHtml(s.set_img_url)}" alt="">` : ""}
+        <h4>${escapeHtml(s.name)}</h4>
+        <div class="meta-row"><span>${s.year || "—"}</span>${s.theme_name ? `<span>${escapeHtml(s.theme_name)}</span>` : ""}</div>
+      </a>`).join("")}</div>`;
 
   el.innerHTML = `
     <div class="stats-grid">
@@ -1421,15 +1483,42 @@ async function loadDashboard() {
       <div class="brick-stat brick-blue"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Valeur estimée</span><span class="value">${totalValue.toFixed(2)} €</span></div>
       <div class="brick-stat brick-green"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Minifigs</span><span class="value">${minifigCount}</span></div>
     </div>
-    <p class="muted" style="margin-top:10px;">${totalPaid.toFixed(2)} € dépensés au total · ${wishlistCount} set(s) en liste de souhaits</p>
     ${sets.length === 0
       ? `<div class="empty-state"><h3>Ta collection est vide</h3><p>Commence par ajouter ton premier set LEGO.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`
-      : ""
+      : `
+    <div class="mini-stat-row" style="margin-top:6px;">
+      <span class="mini-stat-pill">💶 <strong>${totalPaid.toFixed(2)} €</strong> dépensés au total</span>
+      <span class="mini-stat-pill">⭐ <strong>${wishlistCount}</strong> set(s) en liste de souhaits</span>
+    </div>
+
+    <div class="highlight-banner">
+      ${sets[0].img_url ? `<img src="${escapeHtml(sets[0].img_url)}" alt="">` : ""}
+      <div style="min-width:0;">
+        <span class="tag">Dernier set ajouté</span>
+        <h3>${escapeHtml(sets[0].name)}</h3>
+        <div class="meta-row">
+          <span>${escapeHtml(sets[0].set_num)}</span>
+          ${sets[0].theme_name ? `<span>${escapeHtml(sets[0].theme_name)}</span>` : ""}
+          ${sets[0].num_parts != null ? `<span>${sets[0].num_parts.toLocaleString("fr-FR")} pièces</span>` : ""}
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline" id="dashboard-view-latest">Voir le détail</button>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button type="button" class="btn btn-outline" data-goto="collection">📚 Voir ma collection</button>
+      <button type="button" class="btn btn-outline" data-goto="wishlist">⭐ Liste de souhaits</button>
+      <button type="button" class="btn btn-outline" data-goto="stats">📊 Statistiques</button>
+    </div>`
     }
     <h3 class="section-highlight" style="margin-top:14px;">Nouveautés LEGO pour toi</h3>
     ${newsHtml}
   `;
   el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
+  const viewLatestBtn = document.getElementById("dashboard-view-latest");
+  if (viewLatestBtn) viewLatestBtn.addEventListener("click", () => openSetDetail(sets[0]));
 }
 
 /* ============================================================
@@ -1509,11 +1598,15 @@ function setCardHtml(item) {
       ${item.img_url ? `<img src="${escapeHtml(item.img_url)}" alt="${escapeHtml(item.name)}">` : `<span class="muted" style="font-size:13px;">Pas d'image</span>`}
     </div>
     <div class="card-body">
-      <span class="ref">${escapeHtml(item.set_num)}</span>
+      <div class="card-body-top">
+        <span class="ref">${escapeHtml(item.set_num)}</span>
+        <span class="condition-badge ${item.condition === "occasion" ? "occasion" : "neuf"}">${item.condition === "occasion" ? "Occasion" : "Neuf"}</span>
+      </div>
       <h3>${escapeHtml(item.name)}</h3>
       <div class="meta-row">
         ${item.year ? `<span>${item.year}</span>` : ""}
         ${item.num_parts != null ? `<span>${item.num_parts} pièces</span>` : ""}
+        ${item.quantity > 1 ? `<span>×${item.quantity}</span>` : ""}
         ${item.theme_name ? `<span class="card-theme">${escapeHtml(item.theme_name)}</span>` : ""}
       </div>
       <div class="view-mode">
@@ -1526,9 +1619,18 @@ function setCardHtml(item) {
         </div>
         ${item.notes ? `<p class="muted card-notes" style="font-style:italic;font-size:13px;">${escapeHtml(item.notes)}</p>` : ""}
         <div class="card-actions">
-          <button class="btn btn-outline btn-details">Détails</button>
-          <button class="btn btn-outline btn-edit">Modifier</button>
-          <button class="btn btn-danger-outline btn-delete">Retirer</button>
+          <button class="btn btn-outline btn-details" aria-label="Détails" title="Détails">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+            <span>Détails</span>
+          </button>
+          <button class="btn btn-outline btn-edit" aria-label="Modifier" title="Modifier">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <span>Modifier</span>
+          </button>
+          <button class="btn btn-danger-outline btn-delete" aria-label="Retirer" title="Retirer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            <span>Retirer</span>
+          </button>
         </div>
         <a class="bricklink-link" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
       </div>
@@ -1767,6 +1869,60 @@ async function loadStats() {
   const themeEntries = Object.entries(themeMap).sort((a, b) => b[1] - a[1]);
   const maxThemePieces = themeEntries.length ? themeEntries[0][1] : 1;
 
+  // Prix moyen par pièce
+  const avgPurchasePerPiece = totalPieces > 0 ? totalPurchase / totalPieces : null;
+  const avgEstimatedPerPiece = totalPieces > 0 ? totalEstimated / totalPieces : null;
+
+  // Records de collection
+  const withYear = sets.filter((s) => s.year);
+  const mostExpensive = sets.reduce((best, s) => {
+    const v = Number(s.current_value ?? s.price_paid ?? -1);
+    return !best || v > Number(best.current_value ?? best.price_paid ?? -1) ? s : best;
+  }, null);
+  const mostPieces = sets.reduce((best, s) => (!best || (s.num_parts || 0) > (best.num_parts || 0) ? s : best), null);
+  const oldestSet = withYear.reduce((best, s) => (!best || s.year < best.year ? s : best), null);
+  const newestSet = withYear.reduce((best, s) => (!best || s.year > best.year ? s : best), null);
+  function recordCard(label, set, valueLabel) {
+    return `
+      <div class="record-card">
+        <span class="record-label">${label}</span>
+        <span class="record-set">
+          ${set.img_url ? `<img src="${escapeHtml(set.img_url)}" alt="">` : ""}
+          <span class="record-name">${escapeHtml(set.name)}</span>
+        </span>
+        <span class="record-value">${valueLabel}</span>
+      </div>`;
+  }
+
+  // Répartition de la valeur par thème
+  const themeValueMap = {};
+  sets.forEach((s) => {
+    const key = s.theme_name || "Sans thème";
+    const v = Number(s.current_value ?? s.price_paid) || 0;
+    themeValueMap[key] = (themeValueMap[key] || 0) + v * (s.quantity || 0);
+  });
+  const themeValueEntries = Object.entries(themeValueMap).sort((a, b) => b[1] - a[1]);
+  const maxThemeValue = themeValueEntries.length ? themeValueEntries[0][1] : 1;
+
+  // Ratio neuf/occasion et monté/en boîte
+  const conditionCounts = { neuf: 0, occasion: 0 };
+  sets.forEach((s) => { conditionCounts[s.condition === "occasion" ? "occasion" : "neuf"] += (s.quantity || 0); });
+  const conditionTotal = conditionCounts.neuf + conditionCounts.occasion || 1;
+  const statusCounts = { expose: 0, boite: 0 };
+  sets.forEach((s) => { statusCounts[s.build_status === "boite" ? "boite" : "expose"] += (s.quantity || 0); });
+  const statusTotal = statusCounts.expose + statusCounts.boite || 1;
+  const donut = (colorA, colorB, pctA) => `background:conic-gradient(${colorA} 0% ${pctA}%, ${colorB} ${pctA}% 100%);`;
+
+  // Historique d'acquisition (sets ajoutés par année)
+  const acquisitionMap = {};
+  sets.forEach((s) => {
+    const year = s.created_at ? new Date(s.created_at).getFullYear() : null;
+    if (!year) return;
+    acquisitionMap[year] = (acquisitionMap[year] || 0) + (s.quantity || 0);
+  });
+  const acquisitionEntries = Object.entries(acquisitionMap).sort((a, b) => Number(a[0]) - Number(b[0]));
+  const maxAcquisition = acquisitionEntries.length ? Math.max(...acquisitionEntries.map((e) => e[1])) : 1;
+
   const rowsHtml = sets.map((s) => {
     const purchase = s.price_paid != null ? Number(s.price_paid) : null;
     const estimated = s.current_value != null ? Number(s.current_value) : purchase;
@@ -1809,6 +1965,49 @@ async function loadStats() {
     </div>
 
     <div class="panel">
+      <h3 style="font-size:17px;">Prix moyen par pièce</h3>
+      <div class="mini-stat-row">
+        <span class="mini-stat-pill">Achat : <strong>${avgPurchasePerPiece != null ? avgPurchasePerPiece.toFixed(3) + " €" : "—"}</strong></span>
+        <span class="mini-stat-pill">Estimé : <strong>${avgEstimatedPerPiece != null ? avgEstimatedPerPiece.toFixed(3) + " €" : "—"}</strong></span>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0;">Un repère pour comparer la "rentabilité" de tes sets entre eux (prix ÷ nombre de pièces).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Records de ta collection</h3>
+      <div class="record-grid">
+        ${mostExpensive ? recordCard("Le plus cher", mostExpensive, eur(Number(mostExpensive.current_value ?? mostExpensive.price_paid) || 0)) : ""}
+        ${mostPieces ? recordCard("Le plus gros", mostPieces, `${(mostPieces.num_parts || 0).toLocaleString("fr-FR")} pièces`) : ""}
+        ${oldestSet ? recordCard("Le plus ancien", oldestSet, String(oldestSet.year)) : ""}
+        ${newestSet ? recordCard("Le plus récent", newestSet, String(newestSet.year)) : ""}
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Répartition neuf / occasion et monté / en boîte</h3>
+      <div class="donut-row">
+        <div class="donut-wrap">
+          <div class="donut" style="${donut("var(--brick)", "var(--stud-dark)", (conditionCounts.neuf / conditionTotal) * 100)}">
+            <div class="donut-center"><strong>${Math.round((conditionCounts.neuf / conditionTotal) * 100)}%</strong><span>neuf</span></div>
+          </div>
+          <div class="donut-legend">
+            <span><span class="dot" style="background:var(--brick);"></span>Neuf (${conditionCounts.neuf})</span>
+            <span><span class="dot" style="background:var(--stud-dark);"></span>Occasion (${conditionCounts.occasion})</span>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <div class="donut" style="${donut("#2563EB", "var(--stud-dark)", (statusCounts.expose / statusTotal) * 100)}">
+            <div class="donut-center"><strong>${Math.round((statusCounts.expose / statusTotal) * 100)}%</strong><span>monté</span></div>
+          </div>
+          <div class="donut-legend">
+            <span><span class="dot" style="background:#2563EB;"></span>Monté / exposé (${statusCounts.expose})</span>
+            <span><span class="dot" style="background:var(--stud-dark);"></span>Encore en boîte (${statusCounts.boite})</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
       <h3 style="font-size:17px;">Sets à construire</h3>
       <p style="font-size:28px;font-family:var(--font-heading);margin:0;">
         📦 ${boxedSets.length} <span style="font-size:14px;font-weight:500;">encore en boîte</span>
@@ -1839,6 +2038,24 @@ async function loadStats() {
           <div class="theme-label"><span>${escapeHtml(theme)}</span><span class="muted">${pieces.toLocaleString("fr-FR")} pièces</span></div>
           <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (pieces / maxThemePieces) * 100)}%;"></div></div>
         </div>`).join("")}
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Répartition de la valeur par thème</h3>
+      ${themeValueEntries.map(([theme, value]) => `
+        <div class="theme-bar-row">
+          <div class="theme-label"><span>${escapeHtml(theme)}</span><span class="muted">${eur(value)}</span></div>
+          <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (value / maxThemeValue) * 100)}%;background:#2563EB;"></div></div>
+        </div>`).join("")}
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:17px;">Historique d'acquisition</h3>
+      ${acquisitionEntries.length > 0 ? acquisitionEntries.map(([year, count]) => `
+        <div class="theme-bar-row">
+          <div class="theme-label"><span>${year}</span><span class="muted">${count} set(s)</span></div>
+          <div class="theme-bar-track"><div class="theme-bar-fill" style="width:${Math.max(4, (count / maxAcquisition) * 100)}%;background:var(--stud-dark);"></div></div>
+        </div>`).join("") : `<p class="muted" style="font-size:13px;margin:0;">Pas assez de données pour afficher un historique.</p>`}
     </div>
 
     <div class="panel">
