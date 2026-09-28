@@ -139,6 +139,7 @@
     background:none; border:none; color:var(--ink);
     text-align:left; padding:9px 16px; border-radius:10px;
     font-size:13px; font-weight:600; white-space:nowrap; transition:background .15s,color .15s;
+    touch-action:manipulation;
   }
   .nav button:hover{ background:rgba(13,13,13,.12); }
   .nav button.active{ background:var(--brick); color:#fff; }
@@ -330,6 +331,7 @@
     display:flex; align-items:center; justify-content:center;
     width:40px; height:40px; flex-shrink:0; border-radius:50%; border:none; background:none;
     color:var(--ink); transition:background .15s,color .15s,transform .15s;
+    touch-action:manipulation;
   }
   .mobile-nav-btn svg{ width:19px; height:19px; }
   .mobile-nav-btn.active{ background:var(--brick); color:#fff; }
@@ -1450,6 +1452,9 @@ document.getElementById("opt-export-excel").addEventListener("click", async (e) 
    ============================================================ */
 const views = ["dashboard", "collection", "stats", "add", "minifigs", "wishlist", "options"];
 function showView(name) {
+  // Coupe net le défilement en cours (y compris l'inertie sur mobile) et
+  // repart en haut de la nouvelle page, sans animation.
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   views.forEach((v) => {
     document.getElementById(`view-${v}`).hidden = v !== name;
   });
