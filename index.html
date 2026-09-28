@@ -220,12 +220,15 @@
   .brick-stat.brick-green{ background:linear-gradient(135deg,#3FBE7C,#1D9A5D); }
 
   /* Dashboard : mise en avant + actualités */
+  #dashboard-content{ display:flex; flex-direction:column; gap:26px; }
   .quick-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+  .quick-actions .btn svg{ width:15px; height:15px; flex-shrink:0; }
   .mini-stat-row{ display:flex; gap:10px; flex-wrap:wrap; }
   .mini-stat-pill{
-    display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--body-fg);
+    display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--body-fg);
     background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:8px 14px; box-shadow:var(--shadow-sm);
   }
+  .mini-stat-pill svg{ width:15px; height:15px; flex-shrink:0; color:var(--brick); }
   .mini-stat-pill strong{ color:var(--brick); }
 
   .highlight-banner{
@@ -1496,9 +1499,15 @@ async function loadDashboard() {
     ${sets.length === 0
       ? `<div class="empty-state"><h3>Ta collection est vide</h3><p>Commence par ajouter ton premier set LEGO.</p><button class="btn btn-primary" data-goto="add">Ajouter un set</button></div>`
       : `
-    <div class="mini-stat-row" style="margin-top:6px;">
-      <span class="mini-stat-pill">💶 <strong>${totalPaid.toFixed(2)} €</strong> dépensés au total</span>
-      <span class="mini-stat-pill">⭐ <strong>${wishlistCount}</strong> set(s) en liste de souhaits</span>
+    <div class="mini-stat-row">
+      <span class="mini-stat-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 6v0M18 6v0"/></svg>
+        <strong>${totalPaid.toFixed(2)} €</strong> dépensés
+      </span>
+      <span class="mini-stat-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        <strong>${wishlistCount}</strong> souhaits
+      </span>
     </div>
 
     <div class="highlight-banner">
@@ -1518,12 +1527,21 @@ async function loadDashboard() {
     </div>
 
     <div class="quick-actions">
-      <button type="button" class="btn btn-outline" data-goto="collection">📚 Voir ma collection</button>
-      <button type="button" class="btn btn-outline" data-goto="wishlist">⭐ Liste de souhaits</button>
-      <button type="button" class="btn btn-outline" data-goto="stats">📊 Statistiques</button>
+      <button type="button" class="btn btn-outline" data-goto="collection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Ma collection
+      </button>
+      <button type="button" class="btn btn-outline" data-goto="wishlist">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        Souhaits
+      </button>
+      <button type="button" class="btn btn-outline" data-goto="stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="6" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/><rect x="18" y="13" width="3" height="5"/></svg>
+        Stats
+      </button>
     </div>`
     }
-    <h3 class="section-highlight" style="margin-top:14px;">Nouveautés LEGO pour toi</h3>
+    <h3 class="section-highlight">Nouveautés LEGO pour toi</h3>
     ${newsHtml}
   `;
   el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
