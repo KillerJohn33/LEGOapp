@@ -1453,18 +1453,12 @@ document.getElementById("opt-export-excel").addEventListener("click", async (e) 
 const views = ["dashboard", "collection", "stats", "add", "minifigs", "wishlist", "options"];
 
 function stopScrollAndGoTop() {
-  // window.scrollTo() seul ne coupe pas toujours l'inertie du scroll tactile
-  // (iOS notamment continue de "glisser" par-dessus). On rend brièvement la
-  // page non scrollable pour stopper net le momentum, puis on remet à zéro
-  // toutes les propriétés de scroll (les navigateurs ne sont pas tous
-  // d'accord sur laquelle lire/écrire), avant de restaurer le scroll.
-  const html = document.documentElement;
-  const prevOverflow = html.style.overflow;
-  html.style.overflow = "hidden";
+  // Remet le scroll à zéro (et coupe au passage l'inertie du scroll tactile,
+  // que les navigateurs mobiles interrompent quand on change scrollTop).
+  // Volontairement simple : basculer overflow:hidden pendant un geste de
+  // scroll actif provoquait un forced layout synchrone qui figeait la page
+  // tant qu'on ne retouchait pas l'écran.
   window.scrollTo(0, 0);
-  html.scrollTop = 0;
-  document.body.scrollTop = 0;
-  requestAnimationFrame(() => { html.style.overflow = prevOverflow; });
 }
 
 function showView(name) {
