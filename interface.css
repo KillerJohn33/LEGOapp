@@ -278,8 +278,10 @@ body{background:radial-gradient(ellipse at 85% 0%,#ffd8560d,transparent 55%),var
 
 @media(max-width:799px){
   :root{--ios-status-height:env(safe-area-inset-top,0px)}
-  /* Comme une app native : la barre de titre jaune, d'un seul tenant, remonte sous la barre
-     de statut iOS. Aucune bande séparée, donc aucune jointure que le système puisse flouter. */
+  /* Barre de statut iOS opaque (status-bar-style "default") teintée par theme-color #ffd000 :
+     iOS 26 floute tout ce qu'une app web dessine sous l'heure, on n'y dessine donc plus rien.
+     La barre de titre prolonge ce même jaune ; si une ancienne installation dessine encore
+     sous l'heure, --ios-status-height garde le titre en dessous. */
   html{overscroll-behavior-y:none}
   .sidebar::before{content:none}
   .sidebar{top:0;background:linear-gradient(180deg,#ffd000 0%,#ffd000 var(--ios-status-height),#ffdc1a calc(var(--ios-status-height) + 30%),#ffc400 100%)}

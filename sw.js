@@ -1,5 +1,5 @@
 /* Shell only: never cache authenticated API calls or signed photo URLs. */
-const CACHE='briquotheque-shell-v9';
+const CACHE='briquotheque-shell-v10';
 const SHELL=['/','/index.html','/interface.css?v=8','/collector.css?v=1','/collector-model.js?v=1','/collector.js?v=1','/vendor/supabase.js','/manifest.webmanifest','/favicon-square.svg?v=3','/apple-touch-icon-v3.png','/app-icon-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL))));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
