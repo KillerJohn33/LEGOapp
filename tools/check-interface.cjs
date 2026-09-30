@@ -31,10 +31,10 @@ const {pathToFileURL}=require('node:url');
    if(width===390){
     await send('Runtime.evaluate',{expression:"document.documentElement.style.setProperty('--ios-status-height','59px');window.scrollTo(0,0)"});
     await new Promise(r=>setTimeout(r,100));
-    const separation=await send('Runtime.evaluate',{expression:"JSON.stringify({strip:document.querySelector('.ios-status-strip').getBoundingClientRect().bottom,title:document.querySelector('.sidebar').getBoundingClientRect().top,blur:getComputedStyle(document.getElementById('set-modal-overlay')).backdropFilter})",returnByValue:true});
-    const pos=JSON.parse(separation.result.value);if(pos.strip!==59||pos.title<pos.strip||pos.blur!=='none')throw Error('Status separation/blur check failed');
+    const separation=await send('Runtime.evaluate',{expression:"JSON.stringify({header:document.querySelector('.sidebar').getBoundingClientRect().top,title:document.querySelector('.sidebar h1').getBoundingClientRect().top,blur:getComputedStyle(document.getElementById('set-modal-overlay')).backdropFilter})",returnByValue:true});
+    const pos=JSON.parse(separation.result.value);if(pos.header!==0||pos.title<59||pos.blur!=='none')throw Error('Status separation/blur check failed');
     await send('Runtime.evaluate',{expression:'window.scrollTo(0,200)'});await new Promise(r=>setTimeout(r,100));
-    const sticky=await send('Runtime.evaluate',{expression:"document.querySelector('.sidebar').getBoundingClientRect().top",returnByValue:true});if(sticky.result.value<59)throw Error('Header overlaps status area on scroll');
+    const sticky=await send('Runtime.evaluate',{expression:"JSON.stringify({header:document.querySelector('.sidebar').getBoundingClientRect().top,title:document.querySelector('.sidebar h1').getBoundingClientRect().top})",returnByValue:true});const st=JSON.parse(sticky.result.value);if(st.header!==0||st.title<59)throw Error('Header must stay under status bar with title below it on scroll');
     await send('Runtime.evaluate',{expression:'window.scrollTo(0,0)'});await new Promise(r=>setTimeout(r,100));
     const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('ui-390-ios-separation.png',Buffer.from(shot.data,'base64'));
     await send('Runtime.evaluate',{expression:"document.documentElement.style.removeProperty('--ios-status-height')"});
