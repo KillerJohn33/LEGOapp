@@ -319,3 +319,12 @@ body{background:radial-gradient(ellipse at 85% 0%,#ffd8560d,transparent 55%),var
 .card-img::after{display:none}
 body{background:var(--bg)}
 
+
+/* Comportement d'app native : pas de zoom au double-tap, pas de sélection ni de menu
+   « Copier / Enregistrer l'image » à l'appui long, sauf dans les champs de saisie. */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+img,svg{-webkit-user-drag:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]:not([contenteditable="false"]){-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+/* Sous 16px, iOS zoome automatiquement sur le champ au moment de la saisie. */
+@media(max-width:799px){input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px}}

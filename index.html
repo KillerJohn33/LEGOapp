@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -18,6 +18,11 @@
 <script src="vendor/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="collector-model.js?v=1"></script>
+<script>
+/* Comportement d'app native : iOS ignore user-scalable=no, on bloque donc le pincement ici. */
+["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+</script>
 <style>
   /* ============================================================
      1) CONFIGURATION VISUELLE — design moderne épuré, accents LEGO
@@ -559,7 +564,7 @@
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=9">
+<link rel="stylesheet" href="interface.css?v=10">
 <link rel="stylesheet" href="collector.css?v=1">
 </head>
 <body>
