@@ -352,3 +352,10 @@ input,textarea,select,[contenteditable]:not([contenteditable="false"]){-webkit-u
 @keyframes viewEnter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 .view-enter{animation:viewEnter .16s ease-out both}
 @media(prefers-reduced-motion:reduce){.view-enter,.mobile-bottom-nav .mobile-nav-btn.active svg{animation:none}}
+
+/* Choix du thème dans les options : trois pastilles Clair / Sombre / Auto. */
+.theme-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:4px;max-width:420px;background:var(--surface-strong);border-radius:14px}
+.theme-choice button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-weight:600;font-size:14px}
+.theme-choice button svg{width:17px;height:17px;flex-shrink:0}
+.theme-choice button.active{background:var(--yellow);color:var(--ink)}
+.theme-choice button:not(.active):hover{color:var(--body-fg)}
