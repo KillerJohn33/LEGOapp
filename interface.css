@@ -462,3 +462,12 @@ html[data-theme="dark"] .release-tag.wished{color:#ff7a7e}
   #collection-content .card-body{cursor:pointer}
   .touch-hint{display:block;margin:-6px 0 0;font-size:12.5px}
 }
+
+/* Rangées des sorties : marge intérieure pour que le contour jaune (survol, appui, ajout)
+   ne soit jamais rogné par la zone de défilement. */
+.dashboard-releases .news-scroll{gap:14px;padding:8px 8px 14px;margin:-8px -8px -6px;scroll-padding:0 8px}
+@media(max-width:799px){
+  /* Sur téléphone, la rangée défile d'un bord à l'autre de l'écran. */
+  .dashboard-releases .news-scroll{gap:12px;padding:8px 16px 14px;margin:-8px -16px -6px;scroll-padding:0 16px}
+  .release-card{flex-basis:176px}
+}

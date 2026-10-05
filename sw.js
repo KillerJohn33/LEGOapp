@@ -1,6 +1,6 @@
 /* Shell only: never cache authenticated API calls or signed photo URLs. */
-const CACHE='briquotheque-shell-v18';
-const SHELL=['/','/index.html','/interface.css?v=16','/collector.css?v=1','/collector-model.js?v=1','/collector.js?v=3','/vendor/supabase.js','/manifest.webmanifest','/favicon-square.svg?v=3','/apple-touch-icon-v3.png','/app-icon-512.png'];
+const CACHE='briquotheque-shell-v19';
+const SHELL=['/','/index.html','/interface.css?v=17','/collector.css?v=1','/collector-model.js?v=1','/collector.js?v=3','/vendor/supabase.js','/manifest.webmanifest','/favicon-square.svg?v=3','/apple-touch-icon-v3.png','/app-icon-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL))));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
   for(const name of await caches.keys())if(name.startsWith('briquotheque-shell-')&&name!==CACHE)await caches.delete(name);
