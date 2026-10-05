@@ -117,11 +117,20 @@ function renderPurchaseHistory(){
 
 function renderWishlistEnhancements(){
   const content=document.getElementById('wishlist-content');if(!content)return;
-  let summary=document.getElementById('wishlist-budget-summary');if(!summary){summary=document.createElement('section');summary.id='wishlist-budget-summary';summary.className='panel collector-panel';content.before(summary);}
+  let summary=document.getElementById('wishlist-budget-summary');if(!summary){summary=document.createElement('section');summary.id='wishlist-budget-summary';summary.className='wishlist-budget';content.before(summary);}
   const pref=M.preferences(doc('preferences','main')),byId={};for(const row of docs.values())if(row.kind==='wishlist')byId[row.entry_id]=row.value;
   const calc=M.budget(allWishlist,byId,pref.budget);
-  summary.innerHTML=`<h3>Budget des prochains achats</h3><div class="budget-summary"><div><span class="muted">Tous les souhaits</span><br><strong>${eur(calc.total)}</strong></div><div><span class="muted">Sélection</span><br><strong>${eur(calc.selected)}</strong></div><div><span class="muted">Reste du budget</span><br><strong>${calc.remaining==null?'—':eur(calc.remaining)}</strong></div></div>${calc.unknown?`<p class="muted">${calc.unknown} prix cible manquant(s) dans la sélection.</p>`:''}`;
-  content.querySelectorAll('.wishlist-row').forEach(row=>{row.querySelector('.wishlist-plan')?.remove();const item=allWishlist.find(x=>String(x.id)===row.dataset.id);if(!item)return;const d=M.wish(byId[item.id]);const controls=document.createElement('div');controls.className='wishlist-plan';controls.dataset.write='';controls.innerHTML=`<label class="field">Prix cible (€)<input type="number" min="0" step="0.01" value="${d.target_price??item.estimated_price??''}"></label><label class="collector-check"><input type="checkbox" ${d.planned?'checked':''}> Prochain achat</label><button type="button" class="btn btn-outline">Enregistrer</button><span class="collector-status"></span>`;row.append(controls);controls.querySelector('button').addEventListener('click',async event=>{event.stopPropagation();const status=controls.querySelector('.collector-status');try{await saveDocument('wishlist',item.id,{target_price:controls.querySelector('input[type=number]').value,planned:controls.querySelector('input[type=checkbox]').checked});message(status,'Enregistré.');renderWishlistEnhancements();}catch(error){message(status,migrationHint(error),true);}});controls.addEventListener('click',e=>e.stopPropagation());});
+  summary.innerHTML=`<div class="budget-summary"><div><span class="muted">Tous les souhaits</span><br><strong>${eur(calc.total)}</strong></div><div><span class="muted">Sélection</span><br><strong>${eur(calc.selected)}</strong></div><div><span class="muted">Reste du budget</span><br><strong>${calc.remaining==null?'—':eur(calc.remaining)}</strong></div></div>${calc.unknown?`<p class="muted">${calc.unknown} prix cible manquant(s) dans la sélection.</p>`:''}`;
+  // Chaque ligne affiche seulement un résumé ; les réglages se font dans la fiche du souhait.
+  content.querySelectorAll('.wishlist-row').forEach(row=>{const slot=row.querySelector('.wishlist-plan-slot');const item=allWishlist.find(x=>String(x.id)===row.dataset.id);if(!slot||!item)return;const d=M.wish(byId[item.id]);
+    slot.innerHTML=`${d.target_price!=null&&d.target_price!==''?`<span class="wish-target">Cible ${eur(d.target_price)}</span>`:''}${d.planned?'<span class="wish-next">Prochain achat</span>':''}`;});
+}
+function renderWishlistPlan(item){
+  const box=document.getElementById('wishlist-modal-plan');if(!box||!item)return;
+  const byId={};for(const row of docs.values())if(row.kind==='wishlist')byId[row.entry_id]=row.value;const d=M.wish(byId[item.id]);
+  box.className='wishlist-plan';box.dataset.write='';
+  box.innerHTML=`<label class="field">Prix cible (€)<input type="number" min="0" step="0.01" inputmode="decimal" value="${d.target_price??item.estimated_price??''}"></label><label class="collector-check"><input type="checkbox" ${d.planned?'checked':''}> Prochain achat</label><button type="button" class="btn btn-outline">Enregistrer</button><span class="collector-status"></span>`;
+  box.querySelector('button').addEventListener('click',async()=>{const status=box.querySelector('.collector-status');try{await saveDocument('wishlist',item.id,{target_price:box.querySelector('input[type=number]').value,planned:box.querySelector('input[type=checkbox]').checked});message(status,'Enregistré.');renderWishlistEnhancements();}catch(error){message(status,migrationHint(error),true);}});
 }
 
 const dashboardLabels={sets:'Sets possédés',pieces:'Pièces au total',value:'Valeur estimée',minifigs:'Minifigs',summary:'Résumé dépenses/souhaits',latest:'Dernier set ajouté',shortcuts:'Raccourcis',news:'Nouveautés LEGO'};
@@ -190,6 +199,7 @@ function bindOptions(){
 function installWrappers(){
   const originalDetail=openSetDetail;openSetDetail=async item=>{await originalDetail(item);await loadDocuments();const panel=document.getElementById('set-modal-panel');panel.insertAdjacentHTML('beforeend',detailPanel(item));bindDetailPanel(item);};
   const originalWishlist=renderWishlist;renderWishlist=()=>{originalWishlist();renderWishlistEnhancements();};
+  const originalWishDetail=openWishlistDetail;openWishlistDetail=item=>{originalWishDetail(item);renderWishlistPlan(item);};
   const originalDashboard=loadDashboard;loadDashboard=async()=>{if(!navigator.onLine&&await showOffline('dashboard'))return;await originalDashboard();await loadDocuments();applyDashboardPreferences();};
   for(const name of ['collection','minifigs','wishlist','stats']){const fnName='load'+name[0].toUpperCase()+name.slice(1),original=globalThis[fnName];if(typeof original==='function')globalThis[fnName]=async()=>{if(!navigator.onLine&&await showOffline(name))return;document.documentElement.classList.remove('offline-readonly');await original();if(name==='wishlist'){await loadDocuments();renderWishlistEnhancements();}};}
   const originalShow=showView;showView=name=>{originalShow(name);if(name==='showcase')renderShowcase();if(name==='options')loadDocuments().then(()=>{populatePreferences();renderPurchaseHistory();});};

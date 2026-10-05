@@ -387,3 +387,44 @@ html[data-theme="dark"] .release-tag.mine{color:var(--yellow)}
 .release-empty,.release-source{margin:0;font-size:13px}
 @media(max-width:799px){.release-card{flex-basis:168px}.release-skeleton{height:230px}}
 @media(prefers-reduced-motion:reduce){.release-skeleton{animation:none}}
+
+/* ---------- Liste de souhaits épurée ---------- */
+#wishlist-content{display:flex!important;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+#wishlist-content:has(.empty-state){background:none;border:0}
+.wishlist-row,.wishlist-row:hover{display:flex!important;align-items:center;gap:14px;width:100%;padding:12px 14px!important;margin:0;border:0!important;border-radius:0!important;background:transparent!important;color:inherit;text-align:left;font:inherit;aspect-ratio:auto!important;box-shadow:none!important;cursor:pointer;flex-wrap:nowrap!important}
+.wishlist-row+.wishlist-row{border-top:1px solid var(--border)!important}
+.wishlist-row:active{background:var(--surface-strong)!important}
+@media(hover:hover){.wishlist-row:hover{background:var(--surface-strong)!important}}
+.wishlist-row>*{display:revert}
+.wishlist-row img{width:60px!important;height:60px!important;flex-shrink:0;padding:5px!important;border-radius:12px!important;background:#fff!important;object-fit:contain!important;border:1px solid var(--border)}
+.wishlist-info{display:flex!important;flex-direction:column;gap:3px;flex:1;min-width:0}
+.wishlist-name{font-weight:600;font-size:15px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.wishlist-info .meta-row{font-size:12px;gap:8px}
+.wishlist-price{display:flex!important;align-items:center;flex-wrap:wrap;gap:6px;font-size:13px}
+.wishlist-plan-slot{display:contents!important}
+.wish-target,.wish-next{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-strong);color:var(--muted)}
+.wish-next{background:var(--yellow-soft);color:#7a5a00}
+html[data-theme="dark"] .wish-next{color:var(--yellow)}
+.priority-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;padding:0!important}
+.priority-dot.priority-3{background:var(--border)}
+.wishlist-chevron{width:18px;height:18px;flex-shrink:0;color:var(--muted)}
+/* Budget en bandeau compact au-dessus de la liste. */
+.wishlist-budget .budget-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.wishlist-budget .budget-summary>div{min-width:0;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;font-size:12px}
+.wishlist-budget .budget-summary strong{display:block;font-size:16px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wishlist-budget .budget-summary br{display:none}
+.wishlist-budget>p{margin:6px 0 0;font-size:12px}
+/* Fiche du souhait : actions empilées puis réglages d'achat. */
+.wishlist-modal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.wishlist-modal-actions .btn{flex:1 1 160px}
+#wishlist-modal-plan.wishlist-plan{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* Appui long sur une vignette de sortie : retour visuel pendant l'appui puis à l'ajout. */
+.release-card{transition:transform .18s ease,border-color .18s}
+.release-card.is-pressing{transform:scale(.96);border-color:var(--yellow-strong)}
+.release-card.just-wished{animation:wishPop .6s ease}
+@keyframes wishPop{0%{transform:scale(.96)}40%{transform:scale(1.03);border-color:var(--red)}100%{transform:none}}
+.release-tag.wished{background:#e3000b1a;color:var(--red)}
+html[data-theme="dark"] .release-tag.wished{color:#ff7a7e}
+@media(prefers-reduced-motion:reduce){.release-card.just-wished{animation:none}}
+.wishlist-modal-actions .btn-remove:not(:hover){background:var(--surface-strong);color:var(--body-fg)}

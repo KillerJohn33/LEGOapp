@@ -567,7 +567,7 @@ document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=14">
+<link rel="stylesheet" href="interface.css?v=15">
 <link rel="stylesheet" href="collector.css?v=1">
 </head>
 <body>
@@ -1560,10 +1560,10 @@ const views = ["dashboard", "collection", "stats", "add", "minifigs", "wishlist"
 function initMobileFilters() {
   const mobile = window.matchMedia("(max-width:799px)");
   [
-    ["collection", ".search-row"],
-    ["minifigs", ".panel"],
-    ["wishlist", ".panel"],
-  ].forEach(([name, selector]) => {
+    ["collection", ".search-row", "Filtrer"],
+    ["minifigs", ".panel", "Ajouter"],
+    ["wishlist", ".panel", "Ajouter"],
+  ].forEach(([name, selector, label]) => {
     const view = document.getElementById(`view-${name}`);
     const panel = view.querySelector(selector);
     panel.id = `${name}-filters`;
@@ -1572,7 +1572,9 @@ function initMobileFilters() {
     button.type = "button";
     button.className = "btn btn-outline mobile-filter-toggle";
     button.setAttribute("aria-controls", panel.id);
-    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--surface)"/><circle cx="15" cy="17" r="3" fill="var(--surface)"/></svg><span>Filtrer</span><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
+    button.innerHTML = label === "Ajouter"
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${label}</span><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--surface)"/><circle cx="15" cy="17" r="3" fill="var(--surface)"/></svg><span>${label}</span><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>`;
     const sync = () => button.setAttribute("aria-expanded", String(!mobile.matches || panel.classList.contains("is-open")));
     button.addEventListener("click", () => {
       panel.classList.toggle("is-open");
@@ -1757,20 +1759,22 @@ function releaseDateLabel(date, currentYear, monthOnly) {
   return d.toLocaleDateString("fr-FR", opts);
 }
 
-function releaseCardHtml(s, ctx) {
+function releaseCardHtml(s, ctx, index) {
   const baseNum = String(s.number).replace(/-1$/, "");
   const owned = ctx.owned.has(s.number);
+  const wished = ctx.wished.has(s.number);
   const mine = ctx.themes.has(normalizeThemeName(s.theme));
   const soon = s.date && s.date > ctx.today;
   return `
-    <a class="news-card release-card" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">
+    <a class="news-card release-card" data-release="${index}" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">
       <div class="release-img">
         ${s.image ? `<img src="${escapeHtml(s.image)}" alt="" loading="lazy">` : `<span class="muted">Image à venir</span>`}
         <span class="release-date${soon ? " is-soon" : ""}">${escapeHtml(releaseDateLabel(s.date, ctx.year, ctx.upcoming))}</span>
       </div>
       <div class="release-tags">
         ${owned ? `<span class="release-tag owned">Possédé</span>` : ""}
-        ${mine && !owned ? `<span class="release-tag mine">Ton thème</span>` : ""}
+        ${wished ? `<span class="release-tag wished">Souhaité</span>` : ""}
+        ${mine && !owned && !wished ? `<span class="release-tag mine">Ton thème</span>` : ""}
       </div>
       <h4>${escapeHtml(s.name)}</h4>
       <div class="meta-row"><span>${escapeHtml(baseNum)}</span>${s.theme ? `<span>${escapeHtml(s.theme)}</span>` : ""}</div>
@@ -1785,9 +1789,14 @@ async function loadDashboardReleases(ownedSetNums, myThemes) {
   const box = document.getElementById("dashboard-releases");
   if (!box) return;
   let data = null;
+  let wished = new Set();
   try {
-    const res = await fetch("/api/lego-releases");
+    const [res, wishRes] = await Promise.all([
+      fetch("/api/lego-releases"),
+      sb.from("wishlist").select("set_num"),
+    ]);
     if (res.ok) data = await res.json();
+    wished = new Set((wishRes.data || []).map((w) => w.set_num));
   } catch (_) {}
   if (!document.body.contains(box)) return; // l'utilisateur a changé de page entre-temps
 
@@ -1798,22 +1807,88 @@ async function loadDashboardReleases(ownedSetNums, myThemes) {
     const ctx = {
       owned: ownedSetNums,
       themes: new Set(myThemes.map(normalizeThemeName)),
+      wished,
       today: data.today,
       year: monthDate.getFullYear(),
     };
-    const row = (list, empty, upcoming = false) => list.length
-      ? `<div class="news-scroll">${list.map((s) => releaseCardHtml(s, { ...ctx, upcoming })).join("")}</div>`
+    const all = [...data.thisMonth, ...data.upcoming];
+    const row = (list, empty, upcoming = false, offset = 0) => list.length
+      ? `<div class="news-scroll">${list.map((s, i) => releaseCardHtml(s, { ...ctx, upcoming }, offset + i)).join("")}</div>`
       : `<p class="muted release-empty">${empty}</p>`;
     box.innerHTML = `
       <h3 class="section-highlight">Nouveautés ${of}${escapeHtml(monthName)} <span class="release-count">${data.thisMonth.length}</span></h3>
       ${row(data.thisMonth, "Aucune sortie recensée ce mois-ci pour l'instant.")}
       <h3 class="section-highlight">À venir <span class="release-count">${data.upcoming.length}</span></h3>
-      ${row(data.upcoming, "Aucun set annoncé pour les prochains mois.", true)}
-      <p class="muted release-source">Données Brickset · prix publics LEGO en euros.</p>`;
+      ${row(data.upcoming, "Aucun set annoncé pour les prochains mois.", true, data.thisMonth.length)}
+      <p class="muted release-source">Appui long sur un set pour l'ajouter à ta liste de souhaits · Données Brickset, prix publics LEGO en euros.</p>`;
+    box.querySelectorAll("[data-release]").forEach((card) => {
+      const s = all[Number(card.dataset.release)];
+      onLongPress(card, async () => {
+        const added = await addSetToWishlist({
+          set_num: s.number, name: s.name, year: s.year, theme_name: s.theme || null,
+          num_parts: s.pieces, img_url: s.image, estimated_price: s.priceEUR,
+        });
+        if (added) markCardWished(card);
+      });
+    });
   } else {
     box.innerHTML = `<h3 class="section-highlight">Nouveautés LEGO</h3>${await rebrickableNewsHtml(ownedSetNums, myThemes)}`;
   }
   if (typeof applyDashboardPreferences === "function") applyDashboardPreferences();
+}
+
+/* Appui long (≈ 0,5 s) sur une vignette : déclenche l'action sans ouvrir le lien.
+   Un déplacement du doigt (défilement de la rangée) annule l'appui. */
+function onLongPress(el, handler, delay = 480) {
+  let timer = null, fired = false, startX = 0, startY = 0;
+  const cancel = () => { clearTimeout(timer); timer = null; el.classList.remove("is-pressing"); };
+  el.addEventListener("pointerdown", (e) => {
+    if (e.button > 0) return;
+    fired = false; startX = e.clientX; startY = e.clientY;
+    el.classList.add("is-pressing");
+    timer = setTimeout(() => {
+      timer = null; fired = true;
+      el.classList.remove("is-pressing");
+      try { navigator.vibrate?.(15); } catch (_) {}
+      handler(e);
+    }, delay);
+  });
+  el.addEventListener("pointermove", (e) => {
+    if (timer && Math.hypot(e.clientX - startX, e.clientY - startY) > 10) cancel();
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach((t) => el.addEventListener(t, cancel));
+  el.addEventListener("click", (e) => { if (fired) { e.preventDefault(); e.stopPropagation(); fired = false; } }, true);
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
+  el.addEventListener("dragstart", (e) => e.preventDefault());
+}
+
+function markCardWished(card) {
+  const tags = card.querySelector(".release-tags");
+  if (!tags || tags.querySelector(".wished")) return;
+  tags.querySelector(".mine")?.remove();
+  tags.insertAdjacentHTML("afterbegin", `<span class="release-tag wished">Souhaité</span>`);
+  card.classList.add("just-wished");
+  setTimeout(() => card.classList.remove("just-wished"), 700);
+}
+
+// Ajoute un set à la liste de souhaits (priorité moyenne), sauf s'il y est déjà.
+async function addSetToWishlist(set) {
+  const { data: existing } = await sb.from("wishlist").select("id").eq("set_num", set.set_num).limit(1);
+  if (existing && existing.length) {
+    showToast(`« ${set.name} » est déjà dans ta liste de souhaits.`, "Voir", () => showView("wishlist"));
+    return true;
+  }
+  const { data: inserted, error } = await sb.from("wishlist").insert({
+    user_id: currentUser.id, priority: 2, ...set,
+    estimated_price: set.estimated_price ?? null,
+  }).select().single();
+  if (error) {
+    showToast(`Impossible d'ajouter « ${set.name} » : ${error.message}`);
+    return false;
+  }
+  if (typeof allWishlist !== "undefined" && inserted) allWishlist = [inserted, ...allWishlist];
+  showToast(`« ${set.name} » ajouté à ta liste de souhaits.`, "Voir", () => showView("wishlist"));
+  return true;
 }
 
 async function rebrickableNewsHtml(ownedSetNums, myThemes) {
@@ -2858,7 +2933,7 @@ function openMinifigDetail(item) {
   panel.innerHTML = `
     <button type="button" class="modal-close" id="set-modal-close" aria-label="Fermer">✕</button>
     <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
-      <img src="${escapeHtml(item.img_url || "")}" alt="" style="width:150px;height:150px;object-fit:contain;background:var(--bg);border-radius:12px;padding:8px;flex-shrink:0;">
+      <img src="${escapeHtml(item.img_url || "")}" alt="" style="width:150px;height:150px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:14px;padding:8px;flex-shrink:0;">
       <div style="flex:1;min-width:200px;">
         ${item.fig_num ? `<span class="ref">${escapeHtml(item.fig_num)}</span>` : ""}
         <h2 style="font-size:20px;color:var(--body-fg);margin:2px 0 6px;">${escapeHtml(item.name)}</h2>
@@ -3041,7 +3116,7 @@ function openWishlistDetail(item) {
   panel.innerHTML = `
     <button type="button" class="modal-close" id="set-modal-close" aria-label="Fermer">✕</button>
     <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
-      <img src="${escapeHtml(item.img_url || "")}" alt="" style="width:150px;height:150px;object-fit:contain;background:var(--bg);border-radius:12px;padding:8px;flex-shrink:0;">
+      <img src="${escapeHtml(item.img_url || "")}" alt="" style="width:150px;height:150px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:14px;padding:8px;flex-shrink:0;">
       <div style="flex:1;min-width:200px;">
         <span class="ref">${escapeHtml(item.set_num)}</span>
         <h2 style="font-size:20px;color:var(--body-fg);margin:2px 0 6px;">${escapeHtml(item.name)}</h2>
@@ -3053,10 +3128,11 @@ function openWishlistDetail(item) {
         <div style="margin-top:10px;">
           <a class="bricklink-link" style="margin-top:0;" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
         </div>
-        <div class="card-actions" style="margin-top:14px;">
+        <div class="wishlist-modal-actions">
           <button type="button" class="btn btn-secondary" id="wishlist-modal-buy-btn">J'ai acheté ce set</button>
-          <button type="button" class="btn btn-outline" id="wishlist-modal-remove-btn">Retirer</button>
+          <button type="button" class="btn btn-outline btn-remove" id="wishlist-modal-remove-btn">Retirer de la liste</button>
         </div>
+        <div id="wishlist-modal-plan"></div>
       </div>
     </div>
   `;
@@ -3077,38 +3153,30 @@ function renderWishlist() {
     el.innerHTML = `<div class="empty-state"><h3>Aucun set en liste de souhaits</h3><p>Recherche un set ci-dessus pour l'ajouter à ta liste.</p></div>`;
     return;
   }
+  // Liste épurée : une ligne par set, le détail (achat, retrait, prix cible) s'ouvre au toucher.
   const labels = wishlistPriorityLabels;
   el.innerHTML = allWishlist.map((item) => `
-    <div class="wishlist-row" data-id="${item.id}">
-      <img src="${escapeHtml(item.img_url || "")}" alt="">
-      <div style="flex:1;min-width:150px;">
-        <span class="ref">${escapeHtml(item.set_num)}</span>
-        <h3 style="font-size:16px;">${escapeHtml(item.name)}</h3>
-        <div class="meta-row">${item.year ? `<span>${item.year}</span>` : ""}${item.estimated_price != null ? `<span>${eur(item.estimated_price)} estimé</span>` : ""}</div>
-        <a class="bricklink-link" href="${brickLinkUrl(item.set_num)}" target="_blank" rel="noopener noreferrer">Voir le prix sur BrickLink ↗</a>
-      </div>
-      <span class="priority-tag priority-${item.priority}">Priorité ${labels[item.priority]}</span>
-      <div class="wishlist-actions">
-        <button class="btn btn-secondary btn-move">J'ai acheté ce set</button>
-        <button class="btn btn-outline btn-remove">Retirer</button>
-      </div>
-    </div>`).join("");
+    <button type="button" class="wishlist-row" data-id="${item.id}">
+      <img src="${escapeHtml(item.img_url || "")}" alt="" loading="lazy">
+      <span class="wishlist-info">
+        <span class="wishlist-name">${escapeHtml(item.name)}</span>
+        <span class="meta-row">
+          <span>${escapeHtml(String(item.set_num).replace(/-1$/, ""))}</span>
+          ${item.theme_name ? `<span>${escapeHtml(item.theme_name)}</span>` : ""}
+          ${item.year ? `<span>${item.year}</span>` : ""}
+        </span>
+        <span class="wishlist-price">
+          <strong>${item.estimated_price != null ? eur(item.estimated_price) : "Prix inconnu"}</strong>
+          <span class="wishlist-plan-slot"></span>
+        </span>
+      </span>
+      <span class="priority-dot priority-${item.priority}" title="Priorité ${labels[item.priority] || ""}" aria-label="Priorité ${labels[item.priority] || ""}"></span>
+      <svg class="wishlist-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+    </button>`).join("");
 
   el.querySelectorAll(".wishlist-row").forEach((row) => {
-    const id = row.dataset.id;
-    const item = allWishlist.find((i) => i.id === id);
-    row.addEventListener("click", (e) => {
-      if (e.target.closest(".wishlist-actions")) return;
-      openWishlistDetail(item);
-    });
-    row.querySelector(".btn-remove").addEventListener("click", (e) => {
-      e.stopPropagation();
-      removeWishlistItem(item);
-    });
-    row.querySelector(".btn-move").addEventListener("click", (e) => {
-      e.stopPropagation();
-      buyWishlistItem(item);
-    });
+    const item = allWishlist.find((i) => String(i.id) === row.dataset.id);
+    row.addEventListener("click", () => openWishlistDetail(item));
   });
 }
 
@@ -3158,7 +3226,7 @@ initAuth();
   <div class="modal-panel" id="set-modal-panel"></div>
 </div>
 
-<script src="collector.js?v=2"></script>
+<script src="collector.js?v=3"></script>
 
 </body>
 </html>
