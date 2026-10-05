@@ -359,3 +359,31 @@ input,textarea,select,[contenteditable]:not([contenteditable="false"]){-webkit-u
 .theme-choice button svg{width:17px;height:17px;flex-shrink:0}
 .theme-choice button.active{background:var(--yellow);color:var(--ink)}
 .theme-choice button:not(.active):hover{color:var(--body-fg)}
+
+/* ---------- Sorties LEGO (accueil) ---------- */
+.dashboard-releases{display:flex;flex-direction:column;gap:14px;min-width:0}
+/* Masquées en bloc quand « Nouveautés LEGO » est décoché dans les options de l'accueil. */
+.dashboard-releases:not(:has(.section-highlight:not([hidden]))){display:none}
+.dashboard-releases .section-highlight{margin-top:6px}
+.release-count{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 7px;border-radius:999px;background:var(--surface-strong);color:var(--muted);font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:0}
+.release-card{flex:0 0 200px;gap:6px;padding:10px 10px 12px}
+.release-img{position:relative;aspect-ratio:4/3;background:#fff;border-radius:12px;display:grid;place-items:center;overflow:hidden}
+.release-img img{width:100%;height:100%;object-fit:contain;padding:8px;aspect-ratio:auto;background:none;border-radius:0}
+.release-img .muted{font-size:12px;color:#8a8577}
+.release-date{position:absolute;left:8px;bottom:8px;padding:3px 8px;border-radius:999px;background:var(--ink);color:#fff;font-size:11px;font-weight:700}
+.release-date.is-soon{background:var(--yellow);color:var(--ink)}
+.release-tags{display:flex;gap:4px;min-height:0}
+.release-tags:empty{display:none}
+.release-tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px}
+.release-tag.owned{background:#00a05a1f;color:#007a45}
+.release-tag.mine{background:var(--yellow-soft);color:#7a5a00}
+html[data-theme="dark"] .release-tag.owned{color:#5fd39a}
+html[data-theme="dark"] .release-tag.mine{color:var(--yellow)}
+.release-card h4{font-size:13.5px;line-height:1.3}
+.release-foot{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-top:auto;font-size:12px;color:var(--muted)}
+.release-foot strong{color:var(--body-fg);font-size:14px}
+.release-skeleton{height:250px;background:var(--surface-strong);border:0;animation:releasePulse 1.2s ease-in-out infinite alternate}
+@keyframes releasePulse{from{opacity:.55}to{opacity:1}}
+.release-empty,.release-source{margin:0;font-size:13px}
+@media(max-width:799px){.release-card{flex-basis:168px}.release-skeleton{height:230px}}
+@media(prefers-reduced-motion:reduce){.release-skeleton{animation:none}}

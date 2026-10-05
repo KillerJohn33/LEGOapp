@@ -567,7 +567,7 @@ document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=13">
+<link rel="stylesheet" href="interface.css?v=14">
 <link rel="stylesheet" href="collector.css?v=1">
 </head>
 <body>
@@ -1680,41 +1680,6 @@ async function loadDashboard() {
   const ownedSetNums = new Set(sets.map((s) => s.set_num));
   const myThemes = Array.from(new Set(sets.map((s) => s.theme_name).filter(Boolean)));
 
-  // Nouveautés personnalisées : sets importants et récents dans mes thèmes déjà
-  // collectionnés. Repli sur les nouveautés toutes thématiques si aucun thème
-  // n'est renseigné ou ne correspond à un thème officiel Rebrickable.
-  let latestSets = [];
-  let newsUnavailable = false;
-
-  try {
-    const themeIds = myThemes.length > 0 ? await matchThemeIds(myThemes) : [];
-    if (themeIds.length > 0) {
-      const perTheme = await Promise.all(themeIds.map((id) => getSetsByTheme(id, 8).catch(() => ({ results: [] }))));
-      const merged = perTheme.flatMap((r) => r.results || []);
-      const seen = new Set();
-      latestSets = merged
-        .filter((s) => (s.num_parts || 0) >= SIGNIFICANT_SET_MIN_PARTS && !ownedSetNums.has(s.set_num))
-        .filter((s) => (seen.has(s.set_num) ? false : (seen.add(s.set_num), true)))
-        .sort((a, b) => (b.year || 0) - (a.year || 0) || (b.set_num || "").localeCompare(a.set_num || ""))
-        .slice(0, 5);
-    }
-    if (latestSets.length === 0) {
-      const fallback = await getLatestReleasedSets();
-      latestSets = (fallback.results || []).filter((s) => (s.num_parts || 0) >= SIGNIFICANT_SET_MIN_PARTS).slice(0, 5);
-    }
-  } catch (e) {
-    newsUnavailable = true;
-  }
-
-  const newsHtml = newsUnavailable || latestSets.length === 0
-    ? `<p class="muted">Actualités indisponibles pour le moment (Rebrickable injoignable).</p>`
-    : `<div class="news-scroll">${latestSets.map((s) => `
-      <a class="news-card" href="https://rebrickable.com/sets/${encodeURIComponent(s.set_num)}/" target="_blank" rel="noopener noreferrer">
-        ${s.set_img_url ? `<img src="${escapeHtml(s.set_img_url)}" alt="">` : ""}
-        <h4>${escapeHtml(s.name)}</h4>
-        <div class="meta-row"><span>${s.year || "—"}</span>${s.theme_name ? `<span>${escapeHtml(s.theme_name)}</span>` : ""}</div>
-      </a>`).join("")}</div>`;
-
   el.innerHTML = `
     <div class="stats-grid">
       <div class="brick-stat brick-yellow"><div class="studs"><span class="stud"></span><span class="stud"></span><span class="stud"></span></div><span class="label">Sets possédés</span><span class="value">${totalSets}</span></div>
@@ -1767,12 +1732,117 @@ async function loadDashboard() {
       </button>
     </div>`
     }
-    <h3 class="section-highlight">Nouveautés LEGO pour toi</h3>
-    ${newsHtml}
+    <div id="dashboard-releases" class="dashboard-releases">
+      <h3 class="section-highlight">Nouveautés du mois</h3>
+      <div class="news-scroll">${'<div class="news-card release-skeleton" aria-hidden="true"></div>'.repeat(4)}</div>
+    </div>
   `;
   el.querySelectorAll("[data-goto]").forEach((btn) => btn.addEventListener("click", () => showView(btn.dataset.goto)));
   const viewLatestBtn = document.getElementById("dashboard-view-latest");
   if (viewLatestBtn) viewLatestBtn.addEventListener("click", () => openSetDetail(sets[0]));
+  // Chargées après l'affichage du tableau de bord pour ne pas le ralentir.
+  loadDashboardReleases(ownedSetNums, myThemes);
+}
+
+/* Sorties LEGO (Brickset, via /api/lego-releases) : nouveautés du mois et sets annoncés.
+   Repli sur les dernières nouveautés Rebrickable si le service est indisponible. */
+const priceFmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+
+function releaseDateLabel(date, currentYear, monthOnly) {
+  if (!date) return "Date à confirmer";
+  const d = new Date(`${date}T12:00:00`);
+  // Pour les mois suivants, un « 1er » signifie souvent juste le mois annoncé : on n'affiche pas le jour.
+  const opts = monthOnly && date.endsWith("-01") ? { month: "long" } : { day: "numeric", month: "short" };
+  if (d.getFullYear() !== currentYear) opts.year = "numeric";
+  return d.toLocaleDateString("fr-FR", opts);
+}
+
+function releaseCardHtml(s, ctx) {
+  const baseNum = String(s.number).replace(/-1$/, "");
+  const owned = ctx.owned.has(s.number);
+  const mine = ctx.themes.has(normalizeThemeName(s.theme));
+  const soon = s.date && s.date > ctx.today;
+  return `
+    <a class="news-card release-card" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">
+      <div class="release-img">
+        ${s.image ? `<img src="${escapeHtml(s.image)}" alt="" loading="lazy">` : `<span class="muted">Image à venir</span>`}
+        <span class="release-date${soon ? " is-soon" : ""}">${escapeHtml(releaseDateLabel(s.date, ctx.year, ctx.upcoming))}</span>
+      </div>
+      <div class="release-tags">
+        ${owned ? `<span class="release-tag owned">Possédé</span>` : ""}
+        ${mine && !owned ? `<span class="release-tag mine">Ton thème</span>` : ""}
+      </div>
+      <h4>${escapeHtml(s.name)}</h4>
+      <div class="meta-row"><span>${escapeHtml(baseNum)}</span>${s.theme ? `<span>${escapeHtml(s.theme)}</span>` : ""}</div>
+      <div class="release-foot">
+        <strong>${s.priceEUR != null ? priceFmt.format(s.priceEUR) : s.promo ? "Cadeau promo" : "Prix à venir"}</strong>
+        ${s.pieces ? `<span>${Number(s.pieces).toLocaleString("fr-FR")} pcs</span>` : ""}
+      </div>
+    </a>`;
+}
+
+async function loadDashboardReleases(ownedSetNums, myThemes) {
+  const box = document.getElementById("dashboard-releases");
+  if (!box) return;
+  let data = null;
+  try {
+    const res = await fetch("/api/lego-releases");
+    if (res.ok) data = await res.json();
+  } catch (_) {}
+  if (!document.body.contains(box)) return; // l'utilisateur a changé de page entre-temps
+
+  if (data && Array.isArray(data.thisMonth)) {
+    const monthDate = new Date(`${data.month}-01T12:00:00`);
+    const monthName = monthDate.toLocaleDateString("fr-FR", { month: "long" });
+    const of = /^[aeiouyéè]/i.test(monthName) ? "d'" : "de ";
+    const ctx = {
+      owned: ownedSetNums,
+      themes: new Set(myThemes.map(normalizeThemeName)),
+      today: data.today,
+      year: monthDate.getFullYear(),
+    };
+    const row = (list, empty, upcoming = false) => list.length
+      ? `<div class="news-scroll">${list.map((s) => releaseCardHtml(s, { ...ctx, upcoming })).join("")}</div>`
+      : `<p class="muted release-empty">${empty}</p>`;
+    box.innerHTML = `
+      <h3 class="section-highlight">Nouveautés ${of}${escapeHtml(monthName)} <span class="release-count">${data.thisMonth.length}</span></h3>
+      ${row(data.thisMonth, "Aucune sortie recensée ce mois-ci pour l'instant.")}
+      <h3 class="section-highlight">À venir <span class="release-count">${data.upcoming.length}</span></h3>
+      ${row(data.upcoming, "Aucun set annoncé pour les prochains mois.", true)}
+      <p class="muted release-source">Données Brickset · prix publics LEGO en euros.</p>`;
+  } else {
+    box.innerHTML = `<h3 class="section-highlight">Nouveautés LEGO</h3>${await rebrickableNewsHtml(ownedSetNums, myThemes)}`;
+  }
+  if (typeof applyDashboardPreferences === "function") applyDashboardPreferences();
+}
+
+async function rebrickableNewsHtml(ownedSetNums, myThemes) {
+  let latestSets = [];
+  try {
+    const themeIds = myThemes.length > 0 ? await matchThemeIds(myThemes) : [];
+    if (themeIds.length > 0) {
+      const perTheme = await Promise.all(themeIds.map((id) => getSetsByTheme(id, 8).catch(() => ({ results: [] }))));
+      const seen = new Set();
+      latestSets = perTheme.flatMap((r) => r.results || [])
+        .filter((s) => (s.num_parts || 0) >= SIGNIFICANT_SET_MIN_PARTS && !ownedSetNums.has(s.set_num))
+        .filter((s) => (seen.has(s.set_num) ? false : (seen.add(s.set_num), true)))
+        .sort((a, b) => (b.year || 0) - (a.year || 0) || (b.set_num || "").localeCompare(a.set_num || ""))
+        .slice(0, 5);
+    }
+    if (latestSets.length === 0) {
+      const fallback = await getLatestReleasedSets();
+      latestSets = (fallback.results || []).filter((s) => (s.num_parts || 0) >= SIGNIFICANT_SET_MIN_PARTS).slice(0, 5);
+    }
+  } catch (e) {
+    return `<p class="muted">Actualités indisponibles pour le moment.</p>`;
+  }
+  if (latestSets.length === 0) return `<p class="muted">Actualités indisponibles pour le moment.</p>`;
+  return `<div class="news-scroll">${latestSets.map((s) => `
+      <a class="news-card" href="https://rebrickable.com/sets/${encodeURIComponent(s.set_num)}/" target="_blank" rel="noopener noreferrer">
+        ${s.set_img_url ? `<img src="${escapeHtml(s.set_img_url)}" alt="">` : ""}
+        <h4>${escapeHtml(s.name)}</h4>
+        <div class="meta-row"><span>${s.year || "—"}</span>${s.theme_name ? `<span>${escapeHtml(s.theme_name)}</span>` : ""}</div>
+      </a>`).join("")}</div>`;
 }
 
 /* ============================================================
