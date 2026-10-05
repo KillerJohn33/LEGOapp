@@ -564,7 +564,7 @@ document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=11">
+<link rel="stylesheet" href="interface.css?v=12">
 <link rel="stylesheet" href="collector.css?v=1">
 </head>
 <body>
@@ -1590,7 +1590,35 @@ function showView(name) {
   if (name === "options") renderOptionsView();
 }
 document.querySelectorAll(".nav-btn, .mobile-nav-btn").forEach((btn) => {
-  btn.addEventListener("click", () => showView(btn.dataset.view));
+  btn.addEventListener("click", () => openNavView(btn.dataset.view));
+});
+
+/* Barre d'onglets mobile, comme Ma Bluraythèque : changement d'onglet dès le contact du doigt
+   (sans attendre le « click » retardé d'iOS), petite vibration, et un nouvel appui sur l'onglet
+   déjà actif remonte simplement en haut de la page au lieu de tout recharger. */
+function currentViewName() {
+  return views.find((v) => !document.getElementById(`view-${v}`).hidden);
+}
+function openNavView(name) {
+  if (name === currentViewName()) {
+    window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    return;
+  }
+  showView(name);
+  const panel = document.getElementById(`view-${name}`);
+  if (panel && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    panel.classList.remove("view-enter");
+    void panel.offsetWidth;
+    panel.classList.add("view-enter");
+  }
+}
+document.querySelectorAll(".mobile-nav-btn").forEach((btn) => {
+  btn.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) return;
+    event.preventDefault();
+    try { navigator.vibrate?.(10); } catch (_) {}
+    openNavView(btn.dataset.view);
+  }, { passive: false, capture: true });
 });
 document.querySelectorAll("[data-goto]").forEach((btn) => {
   btn.addEventListener("click", () => showView(btn.dataset.goto));

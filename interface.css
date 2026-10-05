@@ -221,7 +221,7 @@ html[data-theme="dark"] .toast{background:#33363e}
      La barre de titre prolonge ce même jaune ; si une ancienne installation dessine encore
      sous l'heure, --ios-status-height garde le titre en dessous. */
   html{overscroll-behavior-y:none}
-  .app{padding:0 16px calc(96px + env(safe-area-inset-bottom));gap:22px}
+  .app{padding:0 16px calc(100px + env(safe-area-inset-bottom));gap:22px}
   .sidebar::before{content:none}
   .sidebar{top:0;margin:0 -16px;border-radius:0;background:var(--yellow)}
   /* Barre de titre compacte (~50px) pour ne pas empiler un gros bloc jaune sous la barre de statut. */
@@ -232,16 +232,25 @@ html[data-theme="dark"] .toast{background:#33363e}
   .global-search-trigger{margin-left:auto;min-height:38px;min-width:38px;padding:7px;border-radius:11px;justify-content:center}
   .nav{display:none}
 
+  /* Barre d'onglets flottante, même forme que Ma Bluraythèque : pilule de 66px, icône + libellé,
+     onglet actif sur une pastille claire plutôt qu'un aplat plein. */
   .mobile-bottom-nav{
-    position:fixed;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
-    left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));
-    bottom:calc(12px + env(safe-area-inset-bottom));
-    width:auto;max-width:380px;margin:0 auto;border-radius:999px;padding:5px 6px;gap:2px;transform:translateZ(0)}
-  .mobile-bottom-nav .mobile-nav-btn{display:flex;align-items:center;justify-content:center;width:100%;height:46px;border-radius:999px;gap:0}
-  .mobile-bottom-nav .mobile-nav-btn span{display:none}
-  .mobile-bottom-nav .mobile-nav-btn svg{width:21px;height:21px}
+    position:fixed;display:flex;align-items:stretch;
+    left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));
+    bottom:max(env(safe-area-inset-bottom),12px);
+    width:auto;max-width:none;height:66px;margin:0;border-radius:999px;padding:6px;gap:2px;
+    transform:translateZ(0);touch-action:none}
+  .mobile-bottom-nav .mobile-nav-btn{
+    flex:1 1 0;min-width:0;width:auto;height:auto;padding:0 2px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    border-radius:999px;color:#1c1b19b8;transition:background .15s,color .15s,transform .12s}
+  .mobile-bottom-nav .mobile-nav-btn svg{width:22px;height:22px}
+  .mobile-bottom-nav .mobile-nav-btn span{display:block;font-size:10px;font-weight:600;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .mobile-bottom-nav .mobile-nav-btn.active{background:#ffffffb3;color:var(--red)}
+  .mobile-bottom-nav .mobile-nav-btn:active{transform:scale(.9)}
+  .mobile-bottom-nav .mobile-nav-btn.active svg{animation:navIconPop .22s cubic-bezier(.2,.8,.2,1)}
   .app[hidden]~.mobile-bottom-nav{display:none}
-  #toast-container{bottom:calc(84px + env(safe-area-inset-bottom))}
+  #toast-container{bottom:calc(88px + env(safe-area-inset-bottom))}
 
   .view{gap:18px}
   .page-header{gap:14px;padding-top:14px}
@@ -337,3 +346,9 @@ input,textarea,select,[contenteditable]:not([contenteditable="false"]){-webkit-u
 
 /* Listes déroulantes isolées (hors .field), alignées sur les autres champs. */
 #collector-import-mode,.edit-form select{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--body-fg);font:inherit}
+
+/* Animations des onglets (désactivées si l'utilisateur réduit les animations). */
+@keyframes navIconPop{0%{transform:scale(.82);opacity:.6}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes viewEnter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.view-enter{animation:viewEnter .16s ease-out both}
+@media(prefers-reduced-motion:reduce){.view-enter,.mobile-bottom-nav .mobile-nav-btn.active svg{animation:none}}
