@@ -567,7 +567,7 @@ document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=15">
+<link rel="stylesheet" href="interface.css?v=16">
 <link rel="stylesheet" href="collector.css?v=1">
 </head>
 <body>
@@ -700,6 +700,7 @@ document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault
           <button type="button" class="btn btn-outline" id="bulk-clear">Désélectionner</button>
         </div>
       </div>
+      <p class="muted touch-hint">Astuce : touche un set pour sa fiche, appui long pour plus d'actions.</p>
       <div id="collection-content"><p class="muted">Chargement...</p></div>
     </section>
 
@@ -1820,15 +1821,35 @@ async function loadDashboardReleases(ownedSetNums, myThemes) {
       ${row(data.thisMonth, "Aucune sortie recensée ce mois-ci pour l'instant.")}
       <h3 class="section-highlight">À venir <span class="release-count">${data.upcoming.length}</span></h3>
       ${row(data.upcoming, "Aucun set annoncé pour les prochains mois.", true, data.thisMonth.length)}
-      <p class="muted release-source">Appui long sur un set pour l'ajouter à ta liste de souhaits · Données Brickset, prix publics LEGO en euros.</p>`;
+      <p class="muted release-source">Appui long sur un set pour plus d'actions · Données Brickset, prix publics LEGO en euros.</p>`;
     box.querySelectorAll("[data-release]").forEach((card) => {
       const s = all[Number(card.dataset.release)];
-      onLongPress(card, async () => {
-        const added = await addSetToWishlist({
-          set_num: s.number, name: s.name, year: s.year, theme_name: s.theme || null,
-          num_parts: s.pieces, img_url: s.image, estimated_price: s.priceEUR,
-        });
-        if (added) markCardWished(card);
+      const set = {
+        set_num: s.number, name: s.name, year: s.year, theme_name: s.theme || null,
+        num_parts: s.pieces, img_url: s.image,
+      };
+      onLongPress(card, () => {
+        const isWished = !!card.querySelector(".release-tag.wished");
+        const isOwned = !!card.querySelector(".release-tag.owned");
+        const actions = [];
+        if (isWished) actions.push({ label: "Voir dans ma liste de souhaits", icon: "heart", onClick: () => showView("wishlist") });
+        else actions.push({ label: "Ajouter à ma liste de souhaits", icon: "heart", onClick: async () => {
+          if (await addSetToWishlist({ ...set, estimated_price: s.priceEUR })) markCardWished(card);
+        } });
+        if (!isOwned) actions.push({ label: "Je l'ai : ajouter à ma collection", icon: "plus", onClick: async () => {
+          if (await addReleaseToCollection(set)) {
+            ctx.owned.add(s.number);
+            const tags = card.querySelector(".release-tags");
+            tags?.querySelector(".mine")?.remove();
+            tags?.insertAdjacentHTML("afterbegin", `<span class="release-tag owned">Possédé</span>`);
+          }
+        } });
+        actions.push(
+          { label: "Voir la fiche sur Brickset", icon: "link", onClick: () => window.open(s.url, "_blank", "noopener") },
+          { label: "Comparer les prix sur BrickLink", icon: "tag", onClick: () => window.open(brickLinkUrl(s.number), "_blank", "noopener") },
+        );
+        const bits = [String(s.number).replace(/-1$/, ""), s.theme, s.priceEUR != null ? priceFmt.format(s.priceEUR) : null].filter(Boolean);
+        openActionSheet({ title: s.name, subtitle: bits.join(" · "), image: s.image, actions });
       });
     });
   } else {
@@ -1839,11 +1860,11 @@ async function loadDashboardReleases(ownedSetNums, myThemes) {
 
 /* Appui long (≈ 0,5 s) sur une vignette : déclenche l'action sans ouvrir le lien.
    Un déplacement du doigt (défilement de la rangée) annule l'appui. */
-function onLongPress(el, handler, delay = 480) {
+function onLongPress(el, handler, { delay = 480, touchOnly = false } = {}) {
   let timer = null, fired = false, startX = 0, startY = 0;
   const cancel = () => { clearTimeout(timer); timer = null; el.classList.remove("is-pressing"); };
   el.addEventListener("pointerdown", (e) => {
-    if (e.button > 0) return;
+    if (e.button > 0 || (touchOnly && e.pointerType === "mouse")) return;
     fired = false; startX = e.clientX; startY = e.clientY;
     el.classList.add("is-pressing");
     timer = setTimeout(() => {
@@ -1858,8 +1879,78 @@ function onLongPress(el, handler, delay = 480) {
   });
   ["pointerup", "pointercancel", "pointerleave"].forEach((t) => el.addEventListener(t, cancel));
   el.addEventListener("click", (e) => { if (fired) { e.preventDefault(); e.stopPropagation(); fired = false; } }, true);
-  el.addEventListener("contextmenu", (e) => e.preventDefault());
+  el.addEventListener("contextmenu", (e) => { if (!touchOnly || e.pointerType !== "mouse") e.preventDefault(); });
   el.addEventListener("dragstart", (e) => e.preventDefault());
+}
+
+/* Menu d'actions (feuille qui monte du bas sur téléphone, petite fenêtre sur ordinateur).
+   actions : [{ label, icon, danger, onClick }] */
+const actionIcons = {
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  eye: '<circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+  check: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+  link: '<path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
+  tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+};
+
+function openActionSheet({ title, subtitle, image, actions }) {
+  document.getElementById("action-sheet")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "action-sheet";
+  overlay.className = "action-sheet-overlay";
+  overlay.innerHTML = `
+    <div class="action-sheet" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+      <div class="action-sheet-head">
+        ${image ? `<img src="${escapeHtml(image)}" alt="">` : ""}
+        <div><strong>${escapeHtml(title)}</strong>${subtitle ? `<span>${escapeHtml(subtitle)}</span>` : ""}</div>
+      </div>
+      <div class="action-sheet-list">
+        ${actions.map((a, i) => `
+          <button type="button" class="action-sheet-item${a.danger ? " danger" : ""}" data-action="${i}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${actionIcons[a.icon] || ""}</svg>
+            <span>${escapeHtml(a.label)}</span>
+          </button>`).join("")}
+      </div>
+      <button type="button" class="action-sheet-cancel">Annuler</button>
+    </div>`;
+  const close = () => {
+    overlay.classList.add("is-closing");
+    document.removeEventListener("keydown", onKey);
+    setTimeout(() => overlay.remove(), 160);
+  };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  // En relâchant le doigt après l'appui long, le navigateur peut envoyer un « clic » à l'endroit
+  // du doigt, désormais recouvert par le menu : on ignore tout clic qui n'a pas commencé dans le menu.
+  let armed = false;
+  overlay.addEventListener("pointerdown", () => { armed = true; }, true);
+  overlay.addEventListener("click", (e) => {
+    if (!armed && e.detail !== 0) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector(".action-sheet-cancel").addEventListener("click", close);
+  overlay.querySelectorAll("[data-action]").forEach((btn) => btn.addEventListener("click", () => {
+    close();
+    actions[Number(btn.dataset.action)].onClick();
+  }));
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(overlay);
+  overlay.querySelector(".action-sheet-item")?.focus({ preventScroll: true });
+}
+
+// Ajoute à la collection un set vu dans les sorties (1 exemplaire neuf, encore en boîte).
+async function addReleaseToCollection(set) {
+  const { error } = await sb.from("owned_sets").insert({
+    user_id: currentUser.id, set_num: set.set_num, name: set.name, year: set.year,
+    theme_name: set.theme_name, num_parts: set.num_parts, img_url: set.img_url,
+    quantity: 1, condition: "neuf", build_status: "boite",
+  });
+  if (error) { showToast(`Impossible d'ajouter « ${set.name} » : ${error.message}`); return false; }
+  showToast(`« ${set.name} » ajouté à ta collection.`, "Voir", () => showView("collection"));
+  return true;
 }
 
 function markCardWished(card) {
@@ -2111,6 +2202,16 @@ function attachCollectionEvents() {
       viewMode.hidden = false; editMode.hidden = true;
     });
     card.querySelector(".btn-delete").addEventListener("click", () => removeSet(id));
+    // Téléphone/tablette : les boutons sous la vignette sont remplacés par un menu à l'appui long.
+    card.querySelector(".card-body").addEventListener("click", (e) => {
+      if (!matchMedia("(max-width:799px)").matches || e.target.closest("button, input, select, textarea, a, .edit-mode")) return;
+      const item = allSets.find((s) => s.id === id);
+      if (item) openSetDetail(item);
+    });
+    onLongPress(card, () => {
+      const item = allSets.find((s) => s.id === id);
+      if (item) openCollectionActions(item, card);
+    }, { touchOnly: true });
     card.querySelector(".btn-save").addEventListener("click", async () => {
       const patch = {
         quantity: Number(card.querySelector(".f-quantity").value) || 1,
@@ -2126,6 +2227,33 @@ function attachCollectionEvents() {
     });
   });
   updateBulkBar();
+}
+
+function openCollectionActions(item, card) {
+  const boxed = item.build_status === "boite";
+  const selected = selectedSetIds.has(item.id);
+  openActionSheet({
+    title: item.name,
+    subtitle: [String(item.set_num).replace(/-1$/, ""), item.theme_name, item.year].filter(Boolean).join(" · "),
+    image: item.img_url,
+    actions: [
+      { label: "Voir la fiche", icon: "eye", onClick: () => openSetDetail(item) },
+      { label: "Modifier", icon: "edit", onClick: async () => {
+        await openSetDetail(item);
+        document.getElementById("set-modal-edit-btn")?.click();
+      } },
+      { label: boxed ? "Marquer comme monté" : "Marquer comme encore en boîte", icon: "box", onClick: async () => {
+        await saveSetPatch(item.id, { build_status: boxed ? "expose" : "boite" });
+        renderCollection();
+      } },
+      { label: selected ? "Désélectionner" : "Sélectionner", icon: "check", onClick: () => {
+        const box = card.querySelector(".card-select");
+        box.checked = !selected;
+        box.dispatchEvent(new Event("change"));
+      } },
+      { label: "Retirer de ma collection", icon: "trash", danger: true, onClick: () => removeSet(item.id) },
+    ],
+  });
 }
 
 function updateBulkBar() {

@@ -428,3 +428,37 @@ html[data-theme="dark"] .wish-next{color:var(--yellow)}
 html[data-theme="dark"] .release-tag.wished{color:#ff7a7e}
 @media(prefers-reduced-motion:reduce){.release-card.just-wished{animation:none}}
 .wishlist-modal-actions .btn-remove:not(:hover){background:var(--surface-strong);color:var(--body-fg)}
+
+/* ---------- Menu d'actions (appui long) ---------- */
+.action-sheet-overlay{position:fixed;inset:0;z-index:400;background:#14151973;display:flex;align-items:flex-end;justify-content:center;padding:0 10px calc(10px + env(safe-area-inset-bottom));animation:sheetFade .16s ease}
+.action-sheet{width:100%;max-width:440px;display:flex;flex-direction:column;gap:8px;animation:sheetUp .22s cubic-bezier(.2,.8,.2,1)}
+.action-sheet-head,.action-sheet-list,.action-sheet-cancel{background:var(--surface);border-radius:20px}
+.action-sheet-head{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.action-sheet-head img{width:52px;height:52px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:12px;padding:4px;flex-shrink:0}
+.action-sheet-head div{display:flex;flex-direction:column;min-width:0}
+.action-sheet-head strong{font-size:15px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.action-sheet-head span{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.action-sheet-list{display:flex;flex-direction:column;overflow:hidden}
+.action-sheet-item{display:flex;align-items:center;gap:14px;min-height:54px;padding:0 18px;border:0;background:none;color:var(--body-fg);font:inherit;font-size:16px;font-weight:500;text-align:left}
+.action-sheet-item+.action-sheet-item{border-top:1px solid var(--border)}
+.action-sheet-item svg{width:21px;height:21px;flex-shrink:0;color:var(--muted)}
+.action-sheet-item:active,.action-sheet-item:focus-visible{background:var(--surface-strong);outline:none}
+@media(hover:hover){.action-sheet-item:hover{background:var(--surface-strong)}}
+.action-sheet-item.danger,.action-sheet-item.danger svg{color:var(--brick)}
+.action-sheet-cancel{min-height:54px;border:0;color:var(--body-fg);font:inherit;font-size:16px;font-weight:700}
+.action-sheet-overlay.is-closing{animation:sheetFade .16s ease reverse forwards}
+.action-sheet-overlay.is-closing .action-sheet{animation:sheetUp .16s ease reverse forwards}
+@keyframes sheetFade{from{opacity:0}to{opacity:1}}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media(min-width:800px){.action-sheet-overlay{align-items:center}}
+@media(prefers-reduced-motion:reduce){.action-sheet,.action-sheet-overlay,.action-sheet-overlay.is-closing,.action-sheet-overlay.is-closing .action-sheet{animation:none}}
+
+/* Collection sur téléphone : plus de boutons sous les vignettes (menu à l'appui long). */
+.touch-hint{display:none}
+#collection-content .card{transition:transform .18s ease,border-color .18s}
+#collection-content .card.is-pressing{transform:scale(.96);border-color:var(--yellow-strong)}
+@media(max-width:799px){
+  #collection-content .view-mode .card-actions{display:none}
+  #collection-content .card-body{cursor:pointer}
+  .touch-hint{display:block;margin:-6px 0 0;font-size:12.5px}
+}
