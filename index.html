@@ -567,7 +567,7 @@ document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault
 
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
-<link rel="stylesheet" href="interface.css?v=17">
+<link rel="stylesheet" href="interface.css?v=18">
 <link rel="stylesheet" href="collector.css?v=1">
 </head>
 <body>
@@ -1619,6 +1619,7 @@ function showView(name) {
   if (name === "minifigs") loadMinifigs();
   if (name === "wishlist") loadWishlist();
   if (name === "options") renderOptionsView();
+  if (window.syncNavInd) requestAnimationFrame(() => window.syncNavInd(true));
 }
 document.querySelectorAll(".nav-btn, .mobile-nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => openNavView(btn.dataset.view));
@@ -1643,14 +1644,93 @@ function openNavView(name) {
     panel.classList.add("view-enter");
   }
 }
+// Le changement d'onglet au doigt est géré par l'indicateur « verre liquide » ci-dessous (au lever
+// du doigt) ; on bloque ici le « click » tactile qui suivrait et rouvrirait l'onglet.
 document.querySelectorAll(".mobile-nav-btn").forEach((btn) => {
   btn.addEventListener("touchstart", (event) => {
-    if (event.touches.length !== 1) return;
-    event.preventDefault();
-    try { navigator.vibrate?.(10); } catch (_) {}
-    openNavView(btn.dataset.view);
+    if (event.touches.length === 1) event.preventDefault();
   }, { passive: false, capture: true });
 });
+
+/* Téléphone : indicateur « verre liquide » de la barre d'onglets (comme Mon Butin / Ma Bluraythèque).
+   Au toucher il se soulève en goutte de verre, suit le doigt en s'étirant selon la vitesse,
+   puis se repose sur l'onglet choisi ; l'onglet change au lever du doigt. */
+(() => {
+  const bar = document.getElementById("mobile-bottom-nav");
+  if (!bar) return;
+  let ind = null, drag = null, raf = 0;
+  const isPhone = () => matchMedia("(max-width:799px)").matches && getComputedStyle(bar).display !== "none";
+  const tabs = () => [...bar.querySelectorAll(".mobile-nav-btn")];
+  const tabAt = (x) => {
+    const ts = tabs();
+    return ts.find((t) => { const r = t.getBoundingClientRect(); return x >= r.left && x <= r.right; })
+      || (x < ts[0].getBoundingClientRect().left ? ts[0] : ts[ts.length - 1]);
+  };
+  const ensure = () => {
+    if (!isPhone()) return null;
+    if (!ind) { ind = document.createElement("div"); ind.className = "nav-ind"; ind.setAttribute("aria-hidden", "true"); bar.appendChild(ind); }
+    return ind;
+  };
+  const setX = (x, w, sx = 1, sy = 1) => {
+    const br = bar.getBoundingClientRect();
+    const left = Math.max(br.left + 2, Math.min(br.right - 2 - w, x - w / 2)) - br.left;
+    ind.style.width = `${w}px`;
+    ind.style.transform = `translate3d(${left}px,0,0) scale(${sx},${sy})`;
+  };
+  window.syncNavInd = (animate = true) => {
+    if (!ensure() || drag) return;
+    const on = bar.querySelector(".mobile-nav-btn.active");
+    if (!on) { ind.style.opacity = "0"; return; }
+    ind.style.opacity = "";
+    const r = on.getBoundingClientRect();
+    if (!animate) ind.classList.add("no-anim");
+    setX(r.left + r.width / 2, r.width);
+    if (!animate) { void ind.offsetWidth; ind.classList.remove("no-anim"); }
+  };
+  const loop = () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      if (!drag) return;
+      const stretch = Math.min(Math.abs(drag.v) * 0.9, 0.38); // étirement proportionnel à la vitesse
+      setX(drag.x, drag.w, 1.08 + stretch, 1.08 - stretch * 0.45);
+      drag.v *= 0.82;
+      loop();
+    });
+  };
+  bar.addEventListener("pointerdown", (ev) => {
+    const tab = ev.target.closest(".mobile-nav-btn");
+    if (!tab || ev.pointerType === "mouse" || !ensure()) return;
+    drag = { x: ev.clientX, lastX: ev.clientX, start: ev.clientX, t: performance.now(), v: 0, w: tab.getBoundingClientRect().width, over: tab, moved: false };
+    ind.style.opacity = "";
+    ind.classList.add("lift");
+    try { bar.setPointerCapture(ev.pointerId); } catch (_) {}
+    loop();
+  });
+  bar.addEventListener("pointermove", (ev) => {
+    if (!drag) return;
+    const now = performance.now(), dt = Math.max(8, now - drag.t);
+    drag.v = (ev.clientX - drag.lastX) / dt; drag.lastX = ev.clientX; drag.t = now; drag.x = ev.clientX;
+    if (Math.abs(ev.clientX - drag.start) > 6) drag.moved = true;
+    const t = tabAt(ev.clientX);
+    if (t !== drag.over) { drag.over = t; tabs().forEach((x) => x.classList.toggle("ind-over", x === t)); }
+  });
+  const end = (ev, cancel) => {
+    if (!drag) return;
+    const t = cancel ? null : (drag.moved ? tabAt(ev.clientX) : drag.over);
+    drag = null; cancelAnimationFrame(raf);
+    tabs().forEach((x) => x.classList.remove("ind-over"));
+    ind?.classList.remove("lift");
+    if (t) {
+      try { navigator.vibrate?.(10); } catch (_) {}
+      openNavView(t.dataset.view);
+    }
+    requestAnimationFrame(() => window.syncNavInd(true));
+  };
+  bar.addEventListener("pointerup", (ev) => end(ev, false));
+  bar.addEventListener("pointercancel", (ev) => end(ev, true));
+  addEventListener("resize", () => window.syncNavInd(false));
+  requestAnimationFrame(() => window.syncNavInd(false));
+})();
 document.querySelectorAll("[data-goto]").forEach((btn) => {
   btn.addEventListener("click", () => showView(btn.dataset.goto));
 });

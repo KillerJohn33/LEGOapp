@@ -232,23 +232,39 @@ html[data-theme="dark"] .toast{background:#33363e}
   .global-search-trigger{margin-left:auto;min-height:38px;min-width:38px;padding:7px;border-radius:11px;justify-content:center}
   .nav{display:none}
 
-  /* Barre d'onglets flottante, même forme que Ma Bluraythèque : pilule de 66px, icône + libellé,
-     onglet actif sur une pastille claire plutôt qu'un aplat plein. */
+  /* Barre d'onglets « verre liquide », reprise de Mon Butin (comme Ma Bluraythèque) en jaune LEGO :
+     capsule flottante translucide, onglets égaux, onglet actif en rouge sans fond propre et un
+     indicateur unique qui se soulève en goutte de verre sous le doigt. */
   .mobile-bottom-nav{
     position:fixed;display:flex;align-items:stretch;
-    left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));
-    bottom:max(env(safe-area-inset-bottom),12px);
-    width:auto;max-width:none;height:66px;margin:0;border-radius:999px;padding:6px;gap:2px;
-    transform:translateZ(0);touch-action:none}
+    left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 32px);max-width:440px;
+    bottom:max(env(safe-area-inset-bottom),10px);height:62px;margin:0;padding:6px;gap:2px;
+    border-radius:999px;overflow:visible;touch-action:none;-webkit-user-select:none;user-select:none;
+    background:rgba(255,208,0,.8);
+    -webkit-backdrop-filter:blur(26px) saturate(210%) brightness(1.04);backdrop-filter:blur(26px) saturate(210%) brightness(1.04);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.12),inset 0 0 0 .5px rgba(255,255,255,.35),0 10px 30px -12px rgba(0,0,0,.45)}
+  .mobile-bottom-nav::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,0) 45%)}
   .mobile-bottom-nav .mobile-nav-btn{
-    flex:1 1 0;min-width:0;width:auto;height:auto;padding:0 2px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    border-radius:999px;color:#1c1b19b8;transition:background .15s,color .15s,transform .12s}
-  .mobile-bottom-nav .mobile-nav-btn svg{width:22px;height:22px}
-  .mobile-bottom-nav .mobile-nav-btn span{display:block;font-size:10px;font-weight:600;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  .mobile-bottom-nav .mobile-nav-btn.active{background:#ffffffb3;color:var(--red)}
-  .mobile-bottom-nav .mobile-nav-btn:active{transform:scale(.9)}
-  .mobile-bottom-nav .mobile-nav-btn.active svg{animation:navIconPop .22s cubic-bezier(.2,.8,.2,1)}
+    position:relative;z-index:1;flex:1 1 0;min-width:0;width:auto;height:auto;margin:0;padding:0 2px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    border-radius:999px;background:none;box-shadow:none;transform:none;color:rgba(28,27,25,.62);transition:color .2s ease}
+  .mobile-bottom-nav .mobile-nav-btn svg{width:23px;height:23px}
+  .mobile-bottom-nav .mobile-nav-btn span{display:block;font-size:10px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .mobile-bottom-nav .mobile-nav-btn.active{background:none;color:var(--red)}
+  .mobile-bottom-nav .mobile-nav-btn.active svg{stroke-width:2.2;animation:none}
+  .mobile-bottom-nav .mobile-nav-btn:active{transform:none}
+  .mobile-bottom-nav .mobile-nav-btn.ind-over{color:var(--brick-dark)}
+  html[data-theme="dark"] .mobile-bottom-nav .mobile-nav-btn.ind-over{color:#b80009}
+  /* Indicateur sous l'onglet actif ; « lift » = goutte de verre soulevée pendant le toucher. */
+  .mobile-bottom-nav .nav-ind{position:absolute;top:6px;bottom:6px;left:0;z-index:0;border-radius:999px;pointer-events:none;transform-origin:center;
+    background:rgba(255,255,255,.5);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.6);
+    transition:transform .42s cubic-bezier(.25,1.35,.45,1),width .3s ease,background .25s ease,box-shadow .25s ease,top .25s ease,bottom .25s ease;will-change:transform}
+  .mobile-bottom-nav .nav-ind.no-anim{transition:none}
+  .mobile-bottom-nav .nav-ind.lift{top:-1px;bottom:-1px;z-index:2;transition:background .2s ease,box-shadow .2s ease,top .2s ease,bottom .2s ease;
+    background:radial-gradient(120% 120% at 50% 0%,rgba(255,255,255,.6),rgba(255,255,255,.18) 60%,rgba(255,255,255,.28));
+    -webkit-backdrop-filter:saturate(1.8) brightness(1.1);backdrop-filter:saturate(1.8) brightness(1.1);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(255,255,255,.3),inset 0 0 0 .5px rgba(255,255,255,.6),0 8px 18px -10px rgba(0,0,0,.45)}
   .app[hidden]~.mobile-bottom-nav{display:none}
   #toast-container{bottom:calc(88px + env(safe-area-inset-bottom))}
 
@@ -331,7 +347,7 @@ html[data-theme="dark"] .toast{background:#33363e}
 }
 
 /* Aucun flou derrière les fenêtres ni les barres. */
-.sidebar,.mobile-bottom-nav,.modal-overlay,.modal-panel,.toast{filter:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.sidebar,.modal-overlay,.modal-panel,.toast{filter:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 
 /* ---------- 11. Comportement d'app native ---------- */
 /* Pas de zoom au double-tap, pas de sélection ni de menu « Copier / Enregistrer l'image »
@@ -351,7 +367,7 @@ input,textarea,select,[contenteditable]:not([contenteditable="false"]){-webkit-u
 @keyframes navIconPop{0%{transform:scale(.82);opacity:.6}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
 @keyframes viewEnter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 .view-enter{animation:viewEnter .16s ease-out both}
-@media(prefers-reduced-motion:reduce){.view-enter,.mobile-bottom-nav .mobile-nav-btn.active svg{animation:none}}
+@media(prefers-reduced-motion:reduce){.view-enter,.mobile-bottom-nav .mobile-nav-btn.active svg{animation:none}.mobile-bottom-nav .nav-ind{transition:none}}
 
 /* Choix du thème dans les options : trois pastilles Clair / Sombre / Auto. */
 .theme-choice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:4px;max-width:420px;background:var(--surface-strong);border-radius:14px}
